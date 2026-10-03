@@ -96,7 +96,7 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
         <Card icon={<FaLine />} title="กลุ่มไลน์ผู้ค้า">
           <p className="text-sm text-slate-400">ประกาศสำคัญและการยืนยันตัวตนจะแจ้งในกลุ่มนี้ ทีมงานจะตรวจว่าคุณเข้ากลุ่มแล้วก่อนเปิดให้จอง</p>
           <div className="flex flex-wrap items-center gap-4">
-            <a href={LINE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-[#06C755] px-5 py-2.5 font-semibold text-white transition hover:shadow-[0_0_22px_rgba(6,199,85,.55)] active:scale-95">
+            <a href="https://line.me/R/ti/g/QwAUE--TUr" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-[#06C755] px-5 py-2.5 font-semibold text-white transition hover:shadow-[0_0_22px_rgba(6,199,85,.55)] active:scale-95">
               <FaLine className="text-xl" />เข้ากลุ่มไลน์
             </a>
             <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
