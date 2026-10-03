@@ -1,26 +1,25 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Tailwind v4: ตั้งค่าสี/เงา/อนิเมชันที่นี่ (ถ้าใช้ v3 ให้ย้ายค่าเหล่านี้ไปใส่ theme.extend ใน tailwind.config.js) */
+@theme {
+  --color-ink: #0b0f19;
+  --color-neon-violet: #a78bfa;
+  --color-neon-cyan: #67e8f9;
+  --color-neon-pink: #f472b6;
+
+  --shadow-glow-violet: 0 0 32px rgba(167, 139, 250, 0.45);
+  --shadow-glow-cyan: 0 0 22px rgba(103, 232, 249, 0.5);
+  --shadow-glow-pink: 0 0 22px rgba(244, 114, 182, 0.5);
+
+  --animate-orbit-cw: orbit-cw 16s linear infinite;   /* ช้า ตามเข็ม */
+  --animate-orbit-ccw: orbit-ccw 9s linear infinite;  /* เร็ว ทวนเข็ม */
+  --animate-sheet: sheet-up 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
+  --animate-slide-down: slide-down 0.3s ease-out;
+
+  @keyframes orbit-cw { to { transform: rotate(360deg); } }
+  @keyframes orbit-ccw { to { transform: rotate(-360deg); } }
+  @keyframes sheet-up { from { transform: translateY(100%); opacity: 0; } }
+  @keyframes slide-down { from { transform: translateY(-8px); opacity: 0; } }
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+body { background: var(--color-ink); color: #e2e8f0; }
