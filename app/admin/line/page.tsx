@@ -15,7 +15,7 @@ export default function Line() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><h1 className="text-3xl font-bold text-white">ตรวจกลุ่มไลน์</h1><p className="text-sm text-slate-400">เทียบรายชื่อในกลุ่มไลน์ผู้ค้ากับร้านที่แจ้งว่าเข้ากลุ่มแล้ว</p></div>
-        <a href={process.env.NEXT_PUBLIC_LINE_GROUP_URL || "#"} target="_blank" rel="noopener noreferrer" className="rounded-2xl bg-[#06C755] px-4 py-2.5 font-semibold text-white">เปิดกลุ่มไลน์ผู้ค้า</a>
+        <a href={process.env.NEXT_PUBLIC_LINE_GROUP_URL || "https://line.me/R/ti/g/QwAUE--TUr"} target="_blank" rel="noopener noreferrer" className="rounded-2xl bg-[#06C755] px-4 py-2.5 font-semibold text-white">เปิดกลุ่มไลน์ผู้ค้า</a>
       </div>
       <div className="grid grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-white/5 p-1">
         {TABS.map(([t, st], i) => <button key={t} onClick={() => setTab(i)} className={`rounded-xl py-2.5 text-sm transition ${tab === i ? "bg-violet-400/25 text-white" : "text-slate-400 hover:text-white"}`}>{t} <span className="ml-1 rounded-full bg-white/10 px-2 text-xs">{rows.filter((r) => st.includes(r.line_status)).length}</span></button>)}

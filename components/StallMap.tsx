@@ -33,7 +33,7 @@ export default function StallMap({ taken, mine = null, selected = null, held = n
       <Fence />
       <div className="grid grid-cols-2 gap-3 pt-1">
         <Zone items={["กิจกรรม SO.", "จุดลงทะเบียน"]} tone="border-sky-400/30 bg-sky-400/10" />
-        <Zone items={["รับเสื้อเฟรชชี่", "กิจกรรม SC."]} tone="border-sky-400/30 bg-sky-400/10" />
+        <Zone items={["กิจกรรม SC.", "รับเสื้อเฟรชชี่"]} tone="border-sky-400/30 bg-sky-400/10" />
       </div>
       <div className="grid grid-cols-[4fr_3fr] gap-3 pb-2">
         <Zone items={["SMO", "SMO", "SMO", "SMO"]} tone="border-teal-400/30 bg-teal-400/10" />
