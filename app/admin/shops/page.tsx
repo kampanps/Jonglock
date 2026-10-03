@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { FaDownload } from "react-icons/fa";
+import { downloadCsv } from "@/lib/csv";
 import { useAdminShops, AShop, LineBadge, StallChip, card, fmtT } from "@/lib/admin";
 import AdminShopPanel from "@/components/AdminShopPanel";
 
@@ -10,10 +12,25 @@ export default function Shops() {
   const s = q.trim().toLowerCase();
   const shown = rows.filter((r) => (row === "ทั้งหมด" || r.stall_id[0] === row) &&
     (!s || [r.stall_id, r.shop_name, r.owner_name, r.student_id, r.phone, ...r.products].join(" ").toLowerCase().includes(s)));
+  const LINE = { verified: "ยืนยันแล้ว", pending: "รอตรวจ", none: "ยังไม่เข้า", missing: "ยังไม่เข้า" } as const;
+  const exportCsv = () => { // ส่งออกตามข้อมูลที่กรองแล้ว (shown) เท่ากับที่เห็นในตาราง
+    const day = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" });
+    downloadCsv(`shops-${day}${row !== "ทั้งหมด" ? `-row${row}` : ""}${s ? "-search" : ""}.csv`,
+      ["ล็อค", "ชื่อร้าน", "ของที่ขาย", "เจ้าของร้าน", "รหัสนักศึกษา", "เบอร์โทร", "บุคคลภายนอก (จำนวน)", "รายชื่อบุคคลภายนอก", "กลุ่มไลน์", "จองเมื่อ"],
+      shown.map((r) => [r.stall_id, r.shop_name, r.products.join(", "), r.owner_name, r.student_id, r.phone, r.guardians.length, r.guardians.join(", "),
+        LINE[r.line_status], new Date(r.booked_at).toLocaleString("sv-SE", { timeZone: "Asia/Bangkok" }).slice(0, 16)]),
+      [4, 5]); // รหัสนักศึกษา, เบอร์โทร เป็นข้อความ
+  };
   const cur = sel && rows.find((r) => r.booking_id === sel.booking_id);
   return (
     <div className="space-y-5">
-      <div><h1 className="text-3xl font-bold text-white">ร้านค้าทั้งหมด</h1><p className="text-sm text-slate-400">จองแล้ว {rows.length} / 48 ล็อค · คลิกแถวเพื่อดูรายละเอียด</p></div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div><h1 className="text-3xl font-bold text-white">ร้านค้าทั้งหมด</h1><p className="text-sm text-slate-400">จองแล้ว {rows.length} / 48 ล็อค · คลิกแถวเพื่อดูรายละเอียด</p></div>
+        <button onClick={exportCsv} disabled={!shown.length} title="ส่งออกเฉพาะรายการที่แสดงอยู่ตามการค้นหา/ตัวกรอง"
+          className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-neon-violet to-neon-cyan px-5 py-2.5 font-semibold text-slate-950 transition hover:shadow-glow-cyan active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40">
+          <FaDownload />ส่งออก CSV ({shown.length})
+        </button>
+      </div>
       <div className={`${card} !p-3 flex flex-wrap items-center gap-3`}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาชื่อร้าน เลขล็อค ชื่อเจ้าของ หรือรหัสนักศึกษา…" className="min-w-52 flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-slate-100 outline-none focus:border-neon-cyan" />
         <div className="flex gap-1 rounded-2xl border border-white/10 bg-white/5 p-1">
