@@ -12,11 +12,11 @@ export default function GlobalLoader() {
   useEffect(() => {
     if (isAdmin) { setShow(false); setMount(false); return; }
     setMount(true); setShow(true);
-    const t = setTimeout(() => setShow(false), first.current ? 1200 : 500);
+    const t = setTimeout(() => setShow(false), first.current ? 700 : 350);
     first.current = false;
     return () => clearTimeout(t);
   }, [pathname, isAdmin]);
-  useEffect(() => { if (show) return; const t = setTimeout(() => setMount(false), 400); return () => clearTimeout(t); }, [show]);
+  useEffect(() => { if (show) return; const t = setTimeout(() => setMount(false), 300); return () => clearTimeout(t); }, [show]);
 
   if (isAdmin || !mount) return null;
   return <div className={`fixed inset-0 z-[100] transition-opacity duration-300 ${show ? "opacity-100" : "pointer-events-none opacity-0"}`}><LoadingScreen /></div>;

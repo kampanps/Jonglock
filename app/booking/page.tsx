@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import { FaCheckCircle, FaTimesCircle, FaRocket } from "react-icons/fa";
 import { supabase } from "@/lib/supabase";
 import { useGuard } from "@/lib/useGuard";
 import { usePresence } from "@/lib/live";
@@ -11,6 +11,20 @@ import StallMap from "@/components/StallMap";
 type Hold = { stall_id: string; owner_id: string; expires_at: string };
 type Nb = { stall_id: string; products: string[] };
 const norm = (s: string) => s.trim().toLowerCase();
+// ข้อความแจ้งเตือนเมื่อมีคนอื่นจองล็อก (สุ่ม 1 ใน 6)
+const TOAST_MSGS = [
+  (id: string) => `ล็อค ${id} ถูกจองไปแล้ว!!`,
+  (id: string) => `ว้าว! ล็อค ${id} มีเจ้าของแล้วนะ`,
+  (id: string) => `ช้าอด! ล็อค ${id} โดนสอยไปแล้ว`,
+  (id: string) => `มีคนคว้าล็อค ${id} ไปเรียบร้อย!`,
+  (id: string) => `อัปเดตด่วน: ล็อค ${id} ไม่ว่างแล้วจ้า`,
+  (id: string) => `ปิ๊งป่อง! ล็อค ${id} ถูกจองตัดหน้าไปแล้ว`,
+];
+const KF = `
+@keyframes pop-in{0%{transform:scale(.55);opacity:0}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+@keyframes rocket{0%{transform:translateY(14px) scale(.9);opacity:0}40%{opacity:1}100%{transform:translateY(-12px) scale(1.05);opacity:.9}}
+@keyframes fill{from{width:0}to{width:100%}}
+@keyframes toast-life{0%{transform:translateY(10px);opacity:0}8%{transform:none;opacity:1}85%{opacity:1}100%{opacity:0}}`;
 
 export default function Booking() {
   const router = useRouter(); const uid = useGuard(); usePresence(!!uid);
@@ -21,6 +35,7 @@ export default function Booking() {
   const [nb, setNb] = useState<Nb[] | null>(null); const [mine, setMine] = useState<string[]>([]);
   const [live, setLive] = useState(false); const [banner, setBanner] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   const [, tick] = useState(0);
+  const [toasts, setToasts] = useState<{ id: number; text: string }[]>([]); const [done, setDone] = useState<string | null>(null);
   const myShop = useRef<string | null>(null); const pickRef = useRef<string | null>(null); pickRef.current = pick;
 
   const load = useCallback(async () => {
@@ -40,6 +55,13 @@ export default function Booking() {
 
   const close = useCallback((msg?: string) => { supabase.rpc("release_hold").then(() => {}); setPick(null); if (msg) setBanner(msg); }, []);
 
+  const pushToast = useCallback((lockId: string) => {
+    const text = TOAST_MSGS[Math.floor(Math.random() * TOAST_MSGS.length)](lockId);
+    const k = Date.now() + Math.random();
+    setToasts((t) => [...t.slice(-2), { id: k, text }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== k)), 4500); // แสดง 4.5 วิ แล้วจางหาย (CSS)
+  }, []);
+
   // ===== Realtime: bookings + holds =====
   useEffect(() => {
     if (!uid) return;
@@ -47,7 +69,7 @@ export default function Booking() {
       .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, (p) => {
         if (p.eventType === "INSERT") {
           const id = p.new.stall_id as string; setTaken((s) => new Set(s).add(id));
-          if (p.new.shop_id !== myShop.current) setBanner(`${id} เพิ่งถูกจองโดยร้านอื่น`);
+          if (p.new.shop_id !== myShop.current) pushToast(id);
         } else if (p.eventType === "DELETE") {
           const id = (p.old as { stall_id?: string }).stall_id;
           if (id) setTaken((s) => { const n = new Set(s); n.delete(id); return n; }); else load();
@@ -59,7 +81,7 @@ export default function Booking() {
       })
       .subscribe((st) => setLive(st === "SUBSCRIBED"));
     return () => { supabase.removeChannel(ch); };
-  }, [uid, load]);
+  }, [uid, load, pushToast]);
 
   useEffect(() => { if (!banner) return; const t = setTimeout(() => setBanner(""), 6000); return () => clearTimeout(t); }, [banner]);
   useEffect(() => { if (!pick) return; const t = setInterval(() => setLeft((n) => n - 1), 1000); return () => clearInterval(t); }, [pick]);
@@ -79,7 +101,8 @@ export default function Booking() {
     const { error } = await supabase.rpc("book_stall", { p_stall: pick });
     setBusy(false);
     if (error) { setErr(error.message); close(); await load(); return; }
-    setPick(null); router.push("/detail");
+    setDone(pick); setPick(null);              // แสดง Success ก่อน แล้วค่อยพาไปบัตรร้าน
+    setTimeout(() => router.push("/detail"), 2300);
   }
   if (!uid) return null;
 
@@ -125,6 +148,27 @@ export default function Booking() {
 
             <Btn disabled={busy || nb === null || conflict} onClick={confirm} className="w-full py-3.5 disabled:grayscale">{busy ? "กำลังจอง…" : `ยืนยันจองล็อก ${pick}`}</Btn>
             <button onClick={() => close()} className="w-full py-2 text-slate-400 transition hover:text-white">เลือกล็อกอื่น</button>
+          </div>
+        </div>
+      )}
+      <style>{KF}</style>
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-4 top-4 z-40 flex flex-col items-center gap-2 sm:inset-x-auto sm:bottom-4 sm:right-4 sm:top-auto sm:items-end">
+        {toasts.map((t) => (
+          <div key={t.id} style={{ animation: "toast-life 4.5s ease forwards" }} className="max-w-xs rounded-2xl border border-neon-pink/40 bg-slate-900/95 px-4 py-3 text-sm text-slate-100 shadow-glow-pink">🎵 {t.text}</div>
+        ))}
+      </div>
+      {done && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm" role="status" aria-live="assertive">
+          <div style={{ animation: "pop-in .55s cubic-bezier(.34,1.56,.64,1) both" }}
+            className="w-full max-w-sm space-y-4 rounded-3xl border-2 border-neon-cyan bg-slate-900 p-8 text-center shadow-[0_0_30px_rgba(103,232,249,.5),0_0_70px_rgba(244,114,182,.35)]">
+            <div className="relative mx-auto grid size-24 place-items-center rounded-full border-2 border-neon-pink/70 bg-neon-pink/10 shadow-glow-pink">
+              <FaRocket className="text-4xl text-neon-cyan" style={{ animation: "rocket 1.1s ease-out infinite" }} />
+              <FaCheckCircle className="absolute -bottom-1 -right-1 text-3xl text-emerald-400 drop-shadow-[0_0_8px_#34d399]" />
+            </div>
+            <h2 className="text-2xl font-bold text-white">คุณได้ทำการจองล็อคสำเร็จแล้ว!</h2>
+            <p className="text-slate-300">ล็อค <b className="text-neon-cyan">{done}</b> เป็นของคุณแล้ว</p>
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/10"><i className="block h-full rounded-full bg-gradient-to-r from-neon-pink to-neon-cyan" style={{ animation: "fill 2.3s linear forwards" }} /></div>
+            <p className="text-xs text-slate-500">กำลังพาไปบัตรร้านของคุณ…</p>
           </div>
         </div>
       )}
