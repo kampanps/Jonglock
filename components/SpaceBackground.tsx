@@ -19,7 +19,7 @@ const css = `
 
 export default function SpaceBackground() {
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#0B0F19]">
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 print:hidden overflow-hidden bg-[#0B0F19]">
       <style>{css}</style>
       {STARS.map((s, i) => {
         const c = s.pink ? "#f472b6" : "#67e8f9";

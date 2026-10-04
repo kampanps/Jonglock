@@ -15,8 +15,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   useEffect(() => { if (uid) supabase.rpc("is_admin").then(({ data }) => (data ? setOk(true) : router.replace("/"))); }, [uid, router]);
   if (!ok) return null;
   return (
-    <div className="min-h-screen md:grid md:grid-cols-[14rem_1fr]">
-      <aside className="flex items-center gap-2 overflow-x-auto border-b border-white/10 bg-slate-950 p-3 md:sticky md:top-0 md:h-screen md:flex-col md:items-stretch md:border-b-0 md:border-r md:p-4">
+    <div className="min-h-screen print:block md:grid md:grid-cols-[14rem_1fr]">
+      <aside className="print:hidden flex items-center gap-2 overflow-x-auto border-b border-white/10 bg-slate-950 p-3 md:sticky md:top-0 md:h-screen md:flex-col md:items-stretch md:border-b-0 md:border-r md:p-4">
         <div className="hidden pb-4 md:block"><p className="font-bold text-white">MUSIC FEST 2569</p><p className="text-xs text-slate-500">องค์การนักศึกษา · Admin</p></div>
         {NAV.map(([href, t]) => (
           <Link key={href} href={href} className={`shrink-0 rounded-2xl border px-4 py-2.5 text-sm transition ${path === href ? "border-violet-400/40 bg-violet-400/15 text-white shadow-glow-violet" : "border-transparent text-slate-400 hover:bg-white/5 hover:text-white"}`}>{t}</Link>
@@ -26,8 +26,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <LogoutButton />
         </div>
       </aside>
-      <main className="min-w-0 p-4 md:p-8">
-        <div className="mb-5 flex justify-end">
+      <main className="min-w-0 p-4 md:p-8 print:p-0">
+        <div className="mb-5 flex justify-end print:hidden">
           <span className="flex items-center gap-2 rounded-full border border-emerald-400/50 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 shadow-[0_0_16px_rgba(52,211,153,.3)]">
             <i className="size-2 animate-pulse rounded-full bg-emerald-400" />LIVE · {online} คนออนไลน์</span>
         </div>

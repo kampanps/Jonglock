@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { FaDownload } from "react-icons/fa";
+import { FaDownload, FaPrint } from "react-icons/fa";
 import { downloadCsv } from "@/lib/csv";
 import { useAdminShops, AShop, LineBadge, StallChip, card, fmtT } from "@/lib/admin";
 import AdminShopPanel from "@/components/AdminShopPanel";
@@ -23,13 +23,20 @@ export default function Shops() {
   };
   const cur = sel && rows.find((r) => r.booking_id === sel.booking_id);
   return (
-    <div className="space-y-5">
+    <>
+    <div className="space-y-5 print:hidden">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><h1 className="text-3xl font-bold text-white">ร้านค้าทั้งหมด</h1><p className="text-sm text-slate-400">จองแล้ว {rows.length} / 48 ล็อค · คลิกแถวเพื่อดูรายละเอียด</p></div>
+        <div className="flex flex-wrap gap-2">
+        <button onClick={() => window.print()} disabled={!shown.length} title="พิมพ์ใบรายชื่อเซ็นชื่อ (เฉพาะรายการที่กรองอยู่)"
+          className="inline-flex items-center gap-2 rounded-2xl border border-neon-cyan/50 bg-neon-cyan/10 px-5 py-2.5 font-semibold text-neon-cyan transition hover:shadow-glow-cyan active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40">
+          <FaPrint />พิมพ์ใบรายชื่อ
+        </button>
         <button onClick={exportCsv} disabled={!shown.length} title="ส่งออกเฉพาะรายการที่แสดงอยู่ตามการค้นหา/ตัวกรอง"
           className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-neon-violet to-neon-cyan px-5 py-2.5 font-semibold text-slate-950 transition hover:shadow-glow-cyan active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40">
           <FaDownload />ส่งออก CSV ({shown.length})
         </button>
+        </div>
       </div>
       <div className={`${card} !p-3 flex flex-wrap items-center gap-3`}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาชื่อร้าน เลขล็อค ชื่อเจ้าของ หรือรหัสนักศึกษา…" className="min-w-52 flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-slate-100 outline-none focus:border-neon-cyan" />
@@ -63,5 +70,32 @@ export default function Shops() {
         {cur && <AdminShopPanel shop={cur} rows={rows} onDone={() => { reload(); setSel(null); }} />}
       </aside>
     </div>
+
+    {/* ===== ใบรายชื่อสำหรับพิมพ์ (ซ่อนบนจอ แสดงเฉพาะตอนพิมพ์) ใช้ข้อมูลที่กรองแล้วเดียวกับตาราง ===== */}
+    <section className="hidden bg-white text-black print:block print:bg-white print:text-black">
+      <style>{"@media print{html,body{background:#fff!important;color:#000!important}@page{size:A4;margin:12mm}}"}</style>
+      <h1 className="text-center text-2xl font-bold">รายชื่อผู้จองล็อคร้านค้า</h1>
+      <p className="mb-4 mt-1 text-center text-sm">
+        {row === "ทั้งหมด" ? "ทุกแถว" : `แถว ${row}`} · {shown.length} ร้าน · พิมพ์เมื่อ {new Date().toLocaleDateString("th-TH", { dateStyle: "long", timeZone: "Asia/Bangkok" })}
+      </p>
+      <table className="w-full border-collapse border border-gray-600 text-sm">
+        <thead className="table-header-group">
+          <tr>{["ล็อค", "ร้าน / ของที่ขาย", "เจ้าของร้าน", "เบอร์โทร", "ลายเซ็น"].map((h, i) => (
+            <th key={h} className={`border border-gray-600 p-2 text-left ${i === 4 ? "w-[30%]" : ""}`}>{h}</th>))}</tr>
+        </thead>
+        <tbody>
+          {shown.map((r) => (
+            <tr key={r.booking_id} className="break-inside-avoid [page-break-inside:avoid]">
+              <td className="border border-gray-600 p-2 font-bold">{r.stall_id}</td>
+              <td className="border border-gray-600 p-2"><p className="font-semibold">{r.shop_name}</p><p className="text-xs">{r.products.join(", ")}</p></td>
+              <td className="border border-gray-600 p-2"><p>{r.owner_name}</p><p className="text-xs">{r.student_id}</p></td>
+              <td className="border border-gray-600 p-2">{r.phone}</td>
+              <td className="h-20 border border-gray-600 px-2 py-8" />
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+    </>
   );
 }
