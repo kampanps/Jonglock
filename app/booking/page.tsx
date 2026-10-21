@@ -6,11 +6,14 @@ import { supabase } from "@/lib/supabase";
 import { useGuard } from "@/lib/useGuard";
 import { usePresence } from "@/lib/live";
 import { Page, Btn } from "@/components/ui";
-import StallMap from "@/components/StallMap";
+import UserStallMap from "@/components/UserStallMap";
 
 type Hold = { stall_id: string; owner_id: string; expires_at: string };
 type Nb = { stall_id: string; products: string[] };
 const norm = (s: string) => s.trim().toLowerCase();
+// โซนเสื้อผ้า = B1–B4, C1–C4, D1–D4 (ต้องตรงกับ zone_check ใน zones.sql)
+const CLOTHING = new Set(["B", "C", "D"].flatMap((z) => [1, 2, 3, 4].map((n) => z + n)));
+const ALL_IDS = ["A", "B", "C", "D"].flatMap((z) => Array.from({ length: 12 }, (_, i) => z + (i + 1)));
 // ข้อความแจ้งเตือนเมื่อมีคนอื่นจองล็อก (สุ่ม 1 ใน 6)
 const TOAST_MSGS = [
   (id: string) => `ล็อค ${id} ถูกจองไปแล้ว!!`,
@@ -56,10 +59,16 @@ export default function Booking() {
   const close = useCallback((msg?: string) => { supabase.rpc("release_hold").then(() => {}); setPick(null); if (msg) setBanner(msg); }, []);
 
   const pushToast = useCallback((lockId: string) => {
-    const text = TOAST_MSGS[Math.floor(Math.random() * TOAST_MSGS.length)](lockId);
+    const text = "🎵 " + TOAST_MSGS[Math.floor(Math.random() * TOAST_MSGS.length)](lockId);
     const k = Date.now() + Math.random();
     setToasts((t) => [...t.slice(-2), { id: k, text }]);
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== k)), 4500); // แสดง 4.5 วิ แล้วจางหาย (CSS)
+  }, []);
+
+  const notify = useCallback((text: string) => {
+    const k = Date.now() + Math.random();
+    setToasts((t) => [...t.slice(-2), { id: k, text: "⚠️ " + text }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== k)), 4500);
   }, []);
 
   // ===== Realtime: bookings + holds =====
@@ -90,6 +99,9 @@ export default function Booking() {
   // กดเลือก → ขอ hold จากฐานข้อมูล (สำเร็จจึงเปิด Popup)
   async function choose(id: string) {
     setErr("");
+    // ตรวจโซนฝั่งหน้าเว็บ (ฐานข้อมูลตรวจซ้ำอีกชั้นใน zone_check)
+    if (!isClothingShop && CLOTHING.has(id)) return notify("โซนนี้สงวนสิทธิ์สำหรับร้านเสื้อผ้าเท่านั้น");
+    if (isClothingShop && !CLOTHING.has(id)) return notify("ร้านเสื้อผ้าจองได้เฉพาะโซนเสื้อผ้า");
     const { data, error } = await supabase.rpc("hold_stall", { p_stall: id });
     if (error) { setPick(null); setErr(error.message); return; }
     setPick(id); setNb(null);
@@ -110,22 +122,27 @@ export default function Booking() {
   const mineSet = new Set(mine.map(norm));
   const list = (nb ?? []).map((n) => ({ ...n, dup: n.products.filter((p) => mineSet.has(norm(p))) }));
   const conflict = list.some((n) => n.dup.length > 0);
+  // โซนเสื้อผ้า: ร้านเสื้อผ้า = มีหมวด "เสื้อผ้า" · เปิดจองทีละแถว D → C → B ตามความเต็มแบบเรียลไทม์
+  const isClothingShop = mine.some((p) => norm(p) === "เสื้อผ้า");
+  const rowFull = (z: string) => [1, 2, 3, 4].every((n) => taken.has(z + n));
+  const locked = new Set(isClothingShop ? ["C1", "C2", "C3", "C4", "B1", "B2", "B3", "B4"].filter((id) => (id[0] === "C" && !rowFull("D")) || (id[0] === "B" && !rowFull("C"))) : []);
+  const dim = new Set(ALL_IDS.filter((id) => CLOTHING.has(id) !== isClothingShop)); // ล็อกที่ร้านนี้จองไม่ได้ (จางลง แต่กดแล้วมีแจ้งเตือน)
   const mm = String(Math.max(0, Math.floor(left / 60))).padStart(2, "0"), ss = String(Math.max(0, left % 60)).padStart(2, "0");
 
   return (
     <Page title="เลือกล็อก" wide>
       <div className="mb-4 flex items-center justify-between gap-3">
         <div aria-live="polite" className="min-h-10 flex-1">{banner && <p className="animate-slide-down rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-200">📡 {banner}</p>}</div>
-        <span className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${live ? "border-emerald-400/50 bg-emerald-400/10 text-emerald-300 shadow-[0_0_16px_rgba(52,211,153,.35)]" : "border-white/10 text-slate-500"}`}>
+        <span className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${live ? "border-emerald-400/50 bg-emerald-400/10 text-emerald-300 " : "border-white/10 text-slate-500"}`}>
           <i className={`size-2 rounded-full ${live ? "animate-pulse bg-emerald-400" : "bg-slate-500"}`} />{live ? "LIVE" : "OFFLINE"}</span>
       </div>
       {err && <p role="alert" className="mb-4 rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-rose-200">{err}</p>}
-      <StallMap taken={taken} held={heldByOthers} selected={pick} onPick={choose} />
+      <UserStallMap taken={taken} held={heldByOthers} selected={pick} locked={locked} dim={dim} onPick={choose} />
 
       {pick && (
         /* มือถือ: Bottom Sheet ชิดขอบล่าง กว้างเต็มจอ · เดสก์ท็อป: กลางจอ */
         <div className="fixed inset-0 z-20 flex items-end justify-center bg-black/60 backdrop-blur-sm md:items-center md:p-4" role="dialog" aria-modal>
-          <div className="max-h-[92vh] w-full animate-sheet space-y-4 overflow-y-auto rounded-t-2xl border border-white/10 bg-slate-900 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-glow-violet md:max-w-md md:rounded-3xl md:pb-6">
+          <div className="max-h-[92vh] w-full animate-sheet space-y-4 overflow-y-auto rounded-t-2xl border border-white/10 bg-slate-900 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-lg shadow-black/30 md:max-w-md md:rounded-3xl md:pb-6">
             <div className="mx-auto h-1 w-10 rounded-full bg-white/20 md:hidden" />
             <p className="text-sm text-slate-400">แถว {pick[0]} · คอลัมน์ {pick.slice(1)}</p>
             <h2 className="text-3xl font-bold text-white">ล็อก {pick}</h2>
@@ -154,16 +171,16 @@ export default function Booking() {
       <style>{KF}</style>
       <div aria-live="polite" className="pointer-events-none fixed inset-x-4 top-4 z-40 flex flex-col items-center gap-2 sm:inset-x-auto sm:bottom-4 sm:right-4 sm:top-auto sm:items-end">
         {toasts.map((t) => (
-          <div key={t.id} style={{ animation: "toast-life 4.5s ease forwards" }} className="max-w-xs rounded-2xl border border-neon-pink/40 bg-slate-900/95 px-4 py-3 text-sm text-slate-100 shadow-glow-pink">🎵 {t.text}</div>
+          <div key={t.id} style={{ animation: "toast-life 4.5s ease forwards" }} className="max-w-xs rounded-2xl border border-neon-pink/40 bg-slate-900/95 px-4 py-3 text-sm text-slate-100 shadow-md shadow-pink-400/10">{t.text}</div>
         ))}
       </div>
       {done && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm" role="status" aria-live="assertive">
           <div style={{ animation: "pop-in .55s cubic-bezier(.34,1.56,.64,1) both" }}
-            className="w-full max-w-sm space-y-4 rounded-3xl border-2 border-neon-cyan bg-slate-900 p-8 text-center shadow-[0_0_30px_rgba(103,232,249,.5),0_0_70px_rgba(244,114,182,.35)]">
-            <div className="relative mx-auto grid size-24 place-items-center rounded-full border-2 border-neon-pink/70 bg-neon-pink/10 shadow-glow-pink">
+            className="w-full max-w-sm space-y-4 rounded-3xl border border-white/15 bg-slate-900 p-8 text-center ">
+            <div className="relative mx-auto grid size-24 place-items-center rounded-full border-2 border-neon-pink/70 bg-neon-pink/10 shadow-md shadow-pink-400/10">
               <FaRocket className="text-4xl text-neon-cyan" style={{ animation: "rocket 1.1s ease-out infinite" }} />
-              <FaCheckCircle className="absolute -bottom-1 -right-1 text-3xl text-emerald-400 drop-shadow-[0_0_8px_#34d399]" />
+              <FaCheckCircle className="absolute -bottom-1 -right-1 text-3xl text-emerald-400 drop-" />
             </div>
             <h2 className="text-2xl font-bold text-white">คุณได้ทำการจองล็อคสำเร็จแล้ว!</h2>
             <p className="text-slate-300">ล็อค <b className="text-neon-cyan">{done}</b> เป็นของคุณแล้ว</p>

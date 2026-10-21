@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useGuard } from "@/lib/useGuard";
 import { Page, Btn } from "@/components/ui";
-import StallMap from "@/components/StallMap";
+import UserStallMap from "@/components/UserStallMap";
 
 export default function Preview() {
   const router = useRouter(); const uid = useGuard();
@@ -25,7 +25,7 @@ export default function Preview() {
         <p className="text-sm text-sky-300">โหมดดูอย่างเดียว ไม่สามารถจองหรือแก้ไขจากหน้านี้ได้</p>
         <Btn tone="ghost" onClick={() => router.push("/detail")}>กลับไปหน้าเดิม</Btn>
       </div>
-      <StallMap taken={taken} mine={mine} readOnly />
+      <UserStallMap taken={taken} mine={mine} readOnly />
     </Page>
   );
 }

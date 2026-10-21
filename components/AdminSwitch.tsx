@@ -9,7 +9,7 @@ export default function AdminSwitch() {
   useEffect(() => { supabase.rpc("is_admin").then(({ data }) => setAdmin(!!data)); }, []);
   if (!admin) return null;
   return (
-    <Link href="/admin" className="shrink-0 rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-4 py-1.5 text-sm text-neon-cyan shadow-sm transition hover:-translate-y-0.5 hover:shadow-glow-cyan active:scale-95">
+    <Link href="/admin" className="shrink-0 rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-4 py-1.5 text-sm text-neon-cyan shadow-sm transition hover:-translate-y-0.5 hover:brightness-110 active:scale-95">
       ⚙️<span className="hidden sm:inline"> ไปหน้า Admin Dashboard</span>
     </Link>
   );

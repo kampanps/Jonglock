@@ -47,7 +47,7 @@ export default function Detail() {
         </div>
 
         {/* ===== ตั๋ว ===== */}
-        <article className="overflow-hidden rounded-3xl shadow-glow-violet ring-1 ring-white/10">
+        <article className="overflow-hidden rounded-3xl shadow-lg shadow-black/30 ring-1 ring-white/10">
           <div className="bg-gradient-to-br from-violet-500 to-violet-600 p-5 text-white">
             <div className="flex justify-between text-xs font-bold tracking-widest"><span>♪ MUSIC FEST 2569</span><span>VENDOR PASS</span></div>
             <p className="mt-5 text-sm text-violet-100">เลขล็อก</p>
@@ -99,23 +99,23 @@ export default function Detail() {
 
       {late && (
         <div className="fixed inset-0 z-20 grid place-items-center bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal>
-          <div className="w-full max-w-sm animate-sheet space-y-4 rounded-3xl border border-white/10 bg-slate-900 p-6 text-center shadow-glow-violet">
+          <div className="w-full max-w-sm animate-sheet space-y-4 rounded-3xl border border-white/10 bg-slate-900 p-6 text-center shadow-lg shadow-black/30">
             <span className="mx-auto grid size-14 place-items-center rounded-full border border-amber-300/40 bg-amber-300/10 text-xl text-amber-300"><FaLock /></span>
             <h2 className="text-2xl font-bold text-white">เลยกำหนดยกเลิกแล้ว</h2>
             <p className="text-slate-400">ล็อค {stall} ถูกยืนยันถาวรแล้ว หากมีเหตุจำเป็น ติดต่อทีมงานในกลุ่มไลน์ผู้ค้า</p>
             <p className="rounded-xl bg-amber-300/10 px-3 py-2 text-sm text-amber-200">หมดเขตยกเลิกเมื่อ {fmt(deadline)}</p>
-            <a href="https://www.instagram.com/so.kmutnb.prachinburi/" target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-neon-violet to-neon-cyan py-3.5 font-bold text-slate-950 transition hover:shadow-glow-cyan active:scale-[0.98]"><FaInstagram />ติดต่อองค์การนักศึกษา</a>
+            <a href="https://www.instagram.com/so.kmutnb.prachinburi/" target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 py-3.5 font-bold text-white transition hover:brightness-110 active:scale-[0.98]"><FaInstagram />ติดต่อองค์การนักศึกษา</a>
             <button onClick={() => setLate(false)} className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 text-slate-100 transition hover:bg-white/10">ปิด</button>
           </div>
         </div>
       )}
       {open && (
         <div className="fixed inset-0 z-20 grid place-items-center bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal>
-          <div className="w-full max-w-sm animate-sheet space-y-4 rounded-3xl border border-white/10 bg-slate-900 p-6 text-center shadow-glow-violet">
+          <div className="w-full max-w-sm animate-sheet space-y-4 rounded-3xl border border-white/10 bg-slate-900 p-6 text-center shadow-lg shadow-black/30">
             <h2 className="text-2xl font-bold text-white">ยกเลิกล็อค {stall}?</h2>
             <p className="text-slate-400">ล็อคนี้จะว่างให้คนอื่นจองได้ทันที ถ้าเปลี่ยนใจภายหลังอาจไม่ได้ล็อคเดิมคืน</p>
             <p className="rounded-xl bg-emerald-400/10 px-3 py-2 text-sm text-emerald-300">✓ ยังอยู่ในช่วงยกเลิกได้ (ถึง {fmt(deadline)})</p>
-            <button onClick={cancel} className="w-full rounded-2xl bg-rose-400 py-3.5 font-bold text-slate-950 transition hover:shadow-glow-pink active:scale-[0.98]">ยกเลิกและเลือกล็อคใหม่</button>
+            <button onClick={cancel} className="w-full rounded-2xl bg-rose-400 py-3.5 font-bold text-slate-950 transition hover:brightness-110 active:scale-[0.98]">ยกเลิกและเลือกล็อคใหม่</button>
             <button onClick={() => setOpen(false)} className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 text-slate-100 transition hover:bg-white/10">เก็บล็อคไว้</button>
           </div>
         </div>

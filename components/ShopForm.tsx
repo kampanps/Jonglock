@@ -62,7 +62,7 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
       <Card icon={<FaStore />} title="ร้านค้า">
         <Field label="ชื่อร้าน"><input required className={inputCls} value={v.shop_name} onChange={set("shop_name")} /></Field>
         <Field label="ของที่ขาย">
-          <div className="flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 focus-within:border-neon-cyan focus-within:shadow-glow-cyan">
+          <div className="flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 focus-within:border-neon-cyan ">
             {v.products.map((t) => (
               <span key={t} className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/40 bg-violet-400/15 px-3 py-1 text-sm text-violet-100">
                 {t}<button type="button" onClick={() => delTag(t)} aria-label={`ลบ ${t}`} className="text-violet-300 hover:text-white">×</button>
@@ -96,7 +96,7 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
         <Card icon={<FaLine />} title="กลุ่มไลน์ผู้ค้า">
           <p className="text-sm text-slate-400">ประกาศสำคัญและการยืนยันตัวตนจะแจ้งในกลุ่มนี้ ทีมงานจะตรวจว่าคุณเข้ากลุ่มแล้วก่อนเปิดให้จอง</p>
           <div className="flex flex-wrap items-center gap-4">
-            <a href="https://line.me/R/ti/g/QwAUE--TUr" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-[#06C755] px-5 py-2.5 font-semibold text-white transition hover:shadow-[0_0_22px_rgba(6,199,85,.55)] active:scale-95">
+            <a href={LINE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-[#06C755] px-5 py-2.5 font-semibold text-white transition  active:scale-95">
               <FaLine className="text-xl" />เข้ากลุ่มไลน์
             </a>
             <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
@@ -108,7 +108,7 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
 
       {err && <p role="alert" className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{err}</p>}
       <div className="sticky bottom-3 z-10 space-y-2 pt-2">
-        <button disabled={busy} className="w-full rounded-2xl bg-gradient-to-r from-neon-violet to-neon-cyan py-4 text-lg font-bold text-slate-950 shadow-glow-violet transition hover:shadow-glow-cyan active:scale-[0.98] disabled:opacity-60">
+        <button disabled={busy} className="w-full rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 py-4 text-lg font-bold text-white shadow-lg shadow-black/30 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60">
           {busy ? "กำลังบันทึก…" : `${submitLabel}  ›`}
         </button>
         <p className="text-center text-xs text-slate-500">ข้อมูลถูกบันทึกอัตโนมัติ ออกจากหน้านี้ได้โดยไม่หาย</p>
