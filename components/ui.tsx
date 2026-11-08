@@ -1,17 +1,16 @@
 import { ReactNode } from "react";
-import LogoutButton from "./LogoutButton";
-import AdminSwitch from "./AdminSwitch";
+import Sidebar from "./Sidebar";
 
 export const Page = ({ title, children, wide }: { title: string; children: ReactNode; wide?: boolean }) => (
   <main className="relative min-h-screen overflow-hidden px-3 py-5 sm:px-4 sm:py-8">
+    <Sidebar />
     <div className="pointer-events-none absolute -top-40 left-1/2 h-96 w-[40rem] -translate-x-1/2 rounded-full bg-violet-600/10 blur-3xl" />
     <div className={`relative mx-auto ${wide ? "max-w-5xl" : "max-w-2xl"} rounded-3xl bg-slate-900/70 shadow-lg shadow-black/30 ring-1 ring-white/10 backdrop-blur`}>
-      <header className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4 md:px-8 md:py-5">
+      <header className="flex items-start justify-between gap-3 border-b border-white/10 py-4 pl-5 pr-16 md:py-5 md:pl-8 md:pr-20">
         <div>
           <p className="text-xs text-neon-cyan md:text-sm">KMUTNB Prachinburi Music Fest 2569</p>
           <h1 className="text-xl font-semibold text-slate-100 md:text-2xl">{title}</h1>
         </div>
-        <div className="flex shrink-0 items-center gap-2"><AdminSwitch /><LogoutButton /></div>
       </header>
       <div className="p-5 md:p-8">{children}</div>
     </div>
