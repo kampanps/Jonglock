@@ -1,4 +1,5 @@
 "use client";
+import VenueRow from "./VenueRow";
 import { ReactNode, useState } from "react";
 // ผังฝั่งผู้ใช้ (แยกจาก StallMap ของ Admin): แยกโซนเสื้อผ้า/อาหาร + ล็อกแถวที่ยังไม่เปิด + เอฟเฟกต์เรียบๆ
 
@@ -53,14 +54,7 @@ export default function UserStallMap({ taken, mine = null, selected = null, held
         <S className="rounded-2xl border border-teal-400/30 bg-teal-400/10 text-teal-100">หอพระ</S>
       </div>
       <Fence />
-      <div className="grid grid-cols-2 gap-3 pt-1">
-        <Zone items={["กิจกรรม SO.", "จุดลงทะเบียน"]} tone="border-sky-400/30 bg-sky-400/10" />
-        <Zone items={["กิจกรรม SC."]} tone="border-sky-400/30 bg-sky-400/10" />
-      </div>
-      <div className="grid grid-cols-[4fr_3fr] gap-3 pb-2">
-        <Zone items={["SMO", "SMO", "SMO", "SMO"]} tone="border-teal-400/30 bg-teal-400/10" />
-        <Zone items={["ชมรม", "ชมรม", "ชมรม"]} tone="border-indigo-400/30 bg-indigo-400/10" />
-      </div>
+      <VenueRow />
 
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300 sm:text-sm">
