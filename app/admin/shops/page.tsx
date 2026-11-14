@@ -26,7 +26,7 @@ export default function Shops() {
     <>
     <div className="space-y-5 print:hidden">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><h1 className="text-3xl font-bold text-white">ร้านค้าทั้งหมด</h1><p className="text-sm text-slate-400">จองแล้ว {rows.length} / 48 ล็อค · คลิกแถวเพื่อดูรายละเอียด</p></div>
+        <div><h1 className="text-3xl font-bold text-white">ร้านค้าทั้งหมด</h1><p className="text-sm text-slate-400">จองแล้ว {rows.length} / 55 ล็อค · คลิกแถวเพื่อดูรายละเอียด</p></div>
         <div className="flex flex-wrap gap-2">
         <button onClick={() => window.print()} disabled={!shown.length} title="พิมพ์ใบรายชื่อเซ็นชื่อ (เฉพาะรายการที่กรองอยู่)"
           className="inline-flex items-center gap-2 rounded-2xl border border-neon-cyan/50 bg-neon-cyan/10 px-5 py-2.5 font-semibold text-neon-cyan transition hover:shadow-glow-cyan active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40">

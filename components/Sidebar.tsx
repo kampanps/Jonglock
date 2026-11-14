@@ -1,5 +1,5 @@
 "use client";
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FaPen, FaUserShield, FaSignOutAlt } from "react-icons/fa";
@@ -7,27 +7,11 @@ import { supabase } from "@/lib/supabase";
 
 type ItemProps = { icon: ReactNode; children: ReactNode; active?: boolean; tone?: string; href?: string; onClick?: () => void };
 
-// เมนู: Hover แล้วเด้งขยาย (CSS spring) จากนั้นลอยซ้าย-ขวาวนลูป (Web Animations) · เอาเมาส์ออกแล้วค่อยๆ กลับที่เดิม
+// เมนู: Hover แบบเรียบ — เปลี่ยนสีพื้นหลังอ่อนๆ + ขยายเล็กน้อย
 function Item({ icon, children, active, tone = "", href, onClick }: ItemProps) {
-  const inner = useRef<HTMLSpanElement>(null); const anim = useRef<Animation | null>(null);
-  const enter = () => {
-    if (!inner.current || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    anim.current?.cancel();
-    anim.current = inner.current.animate(
-      [{ transform: "translateX(0)" }, { transform: "translateX(-6px)" }, { transform: "translateX(6px)" }, { transform: "translateX(0)" }],
-      { duration: 1800, delay: 300, iterations: Infinity, easing: "ease-in-out" });   // delay = รอให้เด้งขยายเสร็จก่อน
-  };
-  const leave = () => {
-    const el = inner.current, a = anim.current; if (!el || !a) return;
-    const x = new DOMMatrix(getComputedStyle(el).transform).m41;                      // ตำแหน่งปัจจุบัน → เลื่อนกลับ 0 นุ่มๆ
-    a.cancel(); anim.current = null;
-    el.animate([{ transform: `translateX(${x}px)` }, { transform: "translateX(0)" }], { duration: 250, easing: "ease-out" });
-  };
-  const cls = `block w-full rounded-xl px-3 py-3 text-left text-[15px] transition-[transform,background-color] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-105 hover:bg-white/10 ${active ? "bg-white/10 text-white" : `text-slate-100 ${tone}`}`;
-  const body = <span ref={inner} className="flex items-center gap-4"><span className="grid w-6 place-items-center text-lg">{icon}</span><span>{children}</span></span>;
-  return href
-    ? <Link href={href} className={cls} onMouseEnter={enter} onMouseLeave={leave}>{body}</Link>
-    : <button type="button" onClick={onClick} className={cls} onMouseEnter={enter} onMouseLeave={leave}>{body}</button>;
+  const cls = `flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left text-[15px] transition duration-200 hover:scale-[1.02] hover:bg-white/10 ${active ? "bg-white/10 text-white" : `text-slate-100 ${tone}`}`;
+  const body = <><span className="grid w-6 place-items-center text-lg">{icon}</span><span>{children}</span></>;
+  return href ? <Link href={href} className={cls}>{body}</Link> : <button type="button" onClick={onClick} className={cls}>{body}</button>;
 }
 
 export default function Sidebar() {

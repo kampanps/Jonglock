@@ -22,7 +22,8 @@ type Props = { taken: Set<string>; mine?: string | null; selected?: string | nul
 
 export default function UserStallMap({ taken, mine = null, selected = null, held = new Set<string>(), locked = new Set<string>(), dim = new Set<string>(), readOnly = false, onPick }: Props) {
   const [zoom, setZoom] = useState<string | null>(null);
-  const freeIn = (z: string) => 12 - Array.from(taken).filter((id) => id[0] === z).length;
+  const rowLen = (z: string) => (z === "A" ? 13 : 14);
+  const freeIn = (z: string) => rowLen(z) - Array.from(taken).filter((id) => id[0] === z).length;
 
   const cell = (id: string, z: string) => {
     const t = taken.has(id), h = held.has(id), lk = locked.has(id), isMine = id === mine, sel = id === selected;
@@ -39,7 +40,7 @@ export default function UserStallMap({ taken, mine = null, selected = null, held
     return <button key={id} disabled={off} title={lk ? "รอเปิด: ต้องจองแถวก่อนหน้าให้เต็มก่อน" : undefined} onClick={() => onPick?.(id)}
       className={`${cls} ${off ? "cursor-not-allowed" : "hover:-translate-y-0.5 hover:border-white/40"}`}>{inner}</button>;
   };
-  const ids = (z: string) => Array.from({ length: 12 }, (_, i) => z + (i + 1));
+  const ids = (z: string) => Array.from({ length: rowLen(z) }, (_, i) => z + (i + 1));
 
   return (
     <div className="space-y-3">
@@ -73,24 +74,25 @@ export default function UserStallMap({ taken, mine = null, selected = null, held
                 {/* ป้ายโซน: แถว A = อาหาร · กลุ่ม B/C = เสื้อผ้า (คอลัมน์ 1–4) + อาหาร (5–12) */}
                 <div className="flex gap-2"><div className="w-16 shrink-0" />
                   {gi === 1 ? (
-                    <div className="grid flex-1 grid-cols-12 gap-1.5"><div className="col-span-4"><Badge tone={CLOTH}>โซนเสื้อผ้า (เปิดแถว D ก่อน)</Badge></div><div className="col-span-8"><Badge tone={FOOD}>โซนอาหารและเครื่องดื่ม</Badge></div></div>
+                    <div className="grid flex-1 grid-cols-[repeat(14,minmax(0,1fr))] gap-1.5"><div className="col-span-4"><Badge tone={CLOTH}>โซนเสื้อผ้า (เปิดแถว D ก่อน)</Badge></div><div className="col-span-10"><Badge tone={FOOD}>โซนอาหารและเครื่องดื่ม</Badge></div></div>
                   ) : gi === 0 ? <Badge tone={FOOD}>โซนอาหารและเครื่องดื่ม</Badge> : null}
                 </div>
-                {g.map((z) => (
+                <div className={g.length > 1 ? "space-y-0.5" : "space-y-2"}>{g.map((z) => (
                   <div key={z} className={`flex items-center gap-2 transition duration-500 ${zoom && zoom !== z ? "opacity-30" : ""}`}>
                     <button onClick={() => setZoom(zoom === z ? null : z)} aria-label={`ซูมแถว ${z}`}
                       className={`sticky left-0 z-[1] flex w-16 shrink-0 flex-col items-center rounded-xl border py-1 leading-tight transition ${zoom === z ? "border-sky-300 bg-sky-400/20" : "border-white/15 bg-slate-900 hover:border-white/30"}`}>
                       <b className="text-lg text-white">{z}</b><span className="text-[11px] text-emerald-300">{freeIn(z)} ว่าง</span>
                     </button>
-                    {z === "A" ? <div className="grid flex-1 grid-cols-12 gap-1.5">{ids(z).map((id) => cell(id, z))}</div> : (
-                      <div className="grid flex-1 grid-cols-12 gap-1.5">
+                    {z === "A" ? <div className="grid flex-1 grid-cols-[repeat(7,minmax(0,1fr))_0.5rem_repeat(6,minmax(0,1fr))] gap-1.5">{ids(z).slice(0, 7).map((id) => cell(id, z))}<div aria-hidden />{ids(z).slice(7).map((id) => cell(id, z))}</div> : (
+                      <div className="grid flex-1 grid-cols-[repeat(14,minmax(0,1fr))] gap-1.5">
                         {/* กล่องครอบโซนเสื้อผ้า คอลัมน์ 1–4 */}
                         <div className="col-span-4 -m-1 grid grid-cols-4 gap-1.5 rounded-xl border border-fuchsia-400/30 bg-fuchsia-400/[0.06] p-1">{ids(z).slice(0, 4).map((id) => cell(id, z))}</div>
-                        <div className="col-span-8 grid grid-cols-8 gap-1.5">{ids(z).slice(4).map((id) => cell(id, z))}</div>
+                        <div className="col-span-10 grid grid-cols-10 gap-1.5">{ids(z).slice(4).map((id) => cell(id, z))}</div>
                       </div>
                     )}
                   </div>
                 ))}
+                </div>
               </div>
             ))}
           </div>
