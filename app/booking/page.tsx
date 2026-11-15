@@ -4,24 +4,17 @@ import { useRouter } from "next/navigation";
 import { FaCheckCircle, FaTimesCircle, FaRocket } from "react-icons/fa";
 import { supabase } from "@/lib/supabase";
 import { useGuard } from "@/lib/useGuard";
-import { usePresence } from "@/lib/live";
 import { Page, Btn } from "@/components/ui";
 import UserStallMap from "@/components/UserStallMap";
+import { CLOTHING, ALL_IDS } from "@/lib/venue";
 
-type Hold = { stall_id: string; owner_id: string; expires_at: string };
+type Snap = { taken: string[]; holds: { stall_id: string; mine: boolean; expires_at: string }[]; mine: string | null; server_now: string };
 type Nb = { stall_id: string; products: string[] };
 const norm = (s: string) => s.trim().toLowerCase();
-// โซนเสื้อผ้า = B1–B4, C1–C4, D1–D4 (ต้องตรงกับ zone_check ใน zones.sql)
-const CLOTHING = new Set(["B", "C", "D"].flatMap((z) => [1, 2, 3, 4].map((n) => z + n)));
-const ALL_IDS = ["A", "B", "C", "D"].flatMap((z) => Array.from({ length: 12 }, (_, i) => z + (i + 1)));
-// ข้อความแจ้งเตือนเมื่อมีคนอื่นจองล็อก (สุ่ม 1 ใน 6)
+const POLL_MS = 2000;
 const TOAST_MSGS = [
-  (id: string) => `ล็อค ${id} ถูกจองไปแล้ว!!`,
-  (id: string) => `ว้าว! ล็อค ${id} มีเจ้าของแล้วนะ`,
-  (id: string) => `ช้าอด! ล็อค ${id} โดนสอยไปแล้ว`,
-  (id: string) => `มีคนคว้าล็อค ${id} ไปเรียบร้อย!`,
-  (id: string) => `อัปเดตด่วน: ล็อค ${id} ไม่ว่างแล้วจ้า`,
-  (id: string) => `ปิ๊งป่อง! ล็อค ${id} ถูกจองตัดหน้าไปแล้ว`,
+  (id: string) => `ล็อค ${id} ถูกจองไปแล้ว!!`, (id: string) => `ว้าว! ล็อค ${id} มีเจ้าของแล้วนะ`, (id: string) => `ช้าอด! ล็อค ${id} โดนสอยไปแล้ว`,
+  (id: string) => `มีคนคว้าล็อค ${id} ไปเรียบร้อย!`, (id: string) => `อัปเดตด่วน: ล็อค ${id} ไม่ว่างแล้วจ้า`, (id: string) => `ปิ๊งป่อง! ล็อค ${id} ถูกจองตัดหน้าไปแล้ว`,
 ];
 const KF = `
 @keyframes pop-in{0%{transform:scale(.55);opacity:0}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
@@ -30,109 +23,116 @@ const KF = `
 @keyframes toast-life{0%{transform:translateY(10px);opacity:0}8%{transform:none;opacity:1}85%{opacity:1}100%{opacity:0}}`;
 
 export default function Booking() {
-  const router = useRouter(); const uid = useGuard(); usePresence(!!uid);
+  const router = useRouter(); const uid = useGuard();
+  const [ready, setReady] = useState(false);
   const [taken, setTaken] = useState<Set<string>>(new Set());
-  const [holds, setHolds] = useState<Record<string, Hold>>({});
+  const [holds, setHolds] = useState<Snap["holds"]>([]);
   const [pick, setPick] = useState<string | null>(null);
-  const [left, setLeft] = useState(0); const [range, setRange] = useState(3);
-  const [nb, setNb] = useState<Nb[] | null>(null); const [mine, setMine] = useState<string[]>([]);
-  const [live, setLive] = useState(false); const [banner, setBanner] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
-  const [, tick] = useState(0);
+  const [expiresAt, setExpiresAt] = useState(0); const [now, setNow] = useState(0);
+  const [range, setRange] = useState(3); const [holdMin, setHoldMin] = useState(5); const [mine, setMine] = useState<string[]>([]);
+  const [nb, setNb] = useState<Nb[] | null>(null);
+  const [live, setLive] = useState(false); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; text: string }[]>([]); const [done, setDone] = useState<string | null>(null);
-  const myShop = useRef<string | null>(null); const pickRef = useRef<string | null>(null); pickRef.current = pick;
+  // refs ป้องกัน race ฝั่งหน้าเว็บ
+  const skew = useRef(0);                         // เวลาเซิร์ฟเวอร์ − เวลาเครื่อง (ms) ให้นาฬิกานับถอยหลังตรงกับ expires_at จริง
+  const prevTaken = useRef<Set<string> | null>(null);
+  const choosing = useRef(false); const confirming = useRef(false); const doneRef = useRef(false);
+  const reqId = useRef(0); const pickRef = useRef<string | null>(null); pickRef.current = pick;
 
-  const load = useCallback(async () => {
-    const { data: shop } = await supabase.from("shops").select("id, products").maybeSingle();
-    if (!shop) return router.replace("/register");
-    myShop.current = shop.id; setMine(shop.products);
-    const { data: cfg } = await supabase.from("app_settings").select("conflict_range").single(); if (cfg) setRange(cfg.conflict_range);
-    const { data } = await supabase.from("bookings").select("stall_id, shop_id");
-    if (data?.some((b) => b.shop_id === shop.id)) return router.replace("/detail");
-    setTaken(new Set((data ?? []).map((b) => b.stall_id)));
-    const { data: hs } = await supabase.from("holds").select("stall_id, owner_id, expires_at");
-    setHolds(Object.fromEntries((hs ?? []).map((h) => [h.stall_id, h])));
-  }, [router]);
-  useEffect(() => { if (uid) load(); }, [uid, load]);
-  useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 5000); return () => clearInterval(t); }, []); // ให้ hold หมดอายุหายจากผัง
-  useEffect(() => () => { if (pickRef.current) supabase.rpc("release_hold").then(() => {}); }, []);
-
-  const close = useCallback((msg?: string) => { supabase.rpc("release_hold").then(() => {}); setPick(null); if (msg) setBanner(msg); }, []);
-
-  const pushToast = useCallback((lockId: string) => {
-    const text = "🎵 " + TOAST_MSGS[Math.floor(Math.random() * TOAST_MSGS.length)](lockId);
+  const addToast = useCallback((text: string) => {
     const k = Date.now() + Math.random();
     setToasts((t) => [...t.slice(-2), { id: k, text }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== k)), 4500); // แสดง 4.5 วิ แล้วจางหาย (CSS)
-  }, []);
-
-  const notify = useCallback((text: string) => {
-    const k = Date.now() + Math.random();
-    setToasts((t) => [...t.slice(-2), { id: k, text: "⚠️ " + text }]);
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== k)), 4500);
   }, []);
+  const notify = useCallback((t: string) => addToast("⚠️ " + t), [addToast]);
 
-  // ===== Realtime: bookings + holds =====
+  // ===== (10) Polling ทุก 2 วินาที: 1 request ต่อรอบ (stall_snapshot) =====
+  const poll = useCallback(async () => {
+    const { data, error } = await supabase.rpc("stall_snapshot");
+    if (error || !data) { setLive(false); return; }
+    const s = data as Snap; setLive(true);
+    skew.current = new Date(s.server_now).getTime() - Date.now();
+    if (s.mine && !doneRef.current) { router.replace("/detail"); return; }
+    const next = new Set(s.taken), prev = prevTaken.current;
+    if (prev) next.forEach((id) => { if (!prev.has(id)) addToast("🎵 " + TOAST_MSGS[Math.floor(Math.random() * TOAST_MSGS.length)](id)); });
+    prevTaken.current = next; setTaken(next); setHolds(s.holds);
+  }, [router, addToast]);
+
+  // (11) โหลดครั้งแรก: ยิงพร้อมกัน ไม่รอทีละคำสั่ง
   useEffect(() => {
     if (!uid) return;
-    const ch = supabase.channel("stalls-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, (p) => {
-        if (p.eventType === "INSERT") {
-          const id = p.new.stall_id as string; setTaken((s) => new Set(s).add(id));
-          if (p.new.shop_id !== myShop.current) pushToast(id);
-        } else if (p.eventType === "DELETE") {
-          const id = (p.old as { stall_id?: string }).stall_id;
-          if (id) setTaken((s) => { const n = new Set(s); n.delete(id); return n; }); else load();
-        }
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "holds" }, (p) => {
-        if (p.eventType === "DELETE") { const id = (p.old as Partial<Hold>).stall_id; if (id) setHolds((h) => { const n = { ...h }; delete n[id]; return n; }); }
-        else { const r = p.new as Hold; setHolds((h) => ({ ...h, [r.stall_id]: r })); }
-      })
-      .subscribe((st) => setLive(st === "SUBSCRIBED"));
-    return () => { supabase.removeChannel(ch); };
-  }, [uid, load, pushToast]);
+    let inflight = false;
+    (async () => {
+      const [shop, cfg] = await Promise.all([
+        supabase.from("shops").select("products").maybeSingle(),
+        supabase.from("app_settings").select("conflict_range, hold_minutes").single(),
+        poll(),
+      ]);
+      if (!shop.data) return router.replace("/register");
+      setMine(shop.data.products); if (cfg.data) { setRange(cfg.data.conflict_range); setHoldMin(cfg.data.hold_minutes); } setReady(true);
+    })();
+    const run = async () => { if (inflight || document.visibilityState !== "visible") return; inflight = true; try { await poll(); } finally { inflight = false; } };
+    const t = setInterval(run, POLL_MS);
+    document.addEventListener("visibilitychange", run);       // กลับมาที่แท็บ → อัปเดตทันที
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", run); };
+  }, [uid, poll, router]);
 
-  useEffect(() => { if (!banner) return; const t = setTimeout(() => setBanner(""), 6000); return () => clearTimeout(t); }, [banner]);
-  useEffect(() => { if (!pick) return; const t = setInterval(() => setLeft((n) => n - 1), 1000); return () => clearInterval(t); }, [pick]);
-  useEffect(() => { if (pick && left <= 0) close("หมดเวลายืนยัน กรุณาเลือกล็อกใหม่"); }, [left, pick, close]);
+  // ===== (15) hold / นาฬิกา / กดรัว =====
+  const close = useCallback((stall: string | null, msg?: string) => {
+    supabase.rpc("release_hold", stall ? { p_stall: stall } : {}).then(() => {});
+    setPick((p) => (stall && p === stall ? null : p)); if (msg) notify(msg);
+  }, [notify]);
+  useEffect(() => () => { if (pickRef.current) supabase.rpc("release_hold", { p_stall: pickRef.current }).then(() => {}); }, []);
+  useEffect(() => { if (!pick) return; setNow(Date.now()); const t = setInterval(() => setNow(Date.now()), 500); return () => clearInterval(t); }, [pick]);
+  const left = pick ? Math.max(0, Math.ceil((expiresAt - (now + skew.current)) / 1000)) : 0;
+  useEffect(() => { if (pick && now && left <= 0) close(pick, "หมดเวลายืนยัน กรุณาเลือกล็อกใหม่"); }, [left, pick, now, close]);
 
-  // กดเลือก → ขอ hold จากฐานข้อมูล (สำเร็จจึงเปิด Popup)
+  const isClothingShop = mine.some((p) => norm(p) === "เสื้อผ้า");
   async function choose(id: string) {
-    setErr("");
-    // ตรวจโซนฝั่งหน้าเว็บ (ฐานข้อมูลตรวจซ้ำอีกชั้นใน zone_check)
+    if (choosing.current || doneRef.current) return;                         // กดรัว: ขณะรอคำตอบเก่า ไม่รับคลิกใหม่
     if (!isClothingShop && CLOTHING.has(id)) return notify("โซนนี้สงวนสิทธิ์สำหรับร้านเสื้อผ้าเท่านั้น");
     if (isClothingShop && !CLOTHING.has(id)) return notify("ร้านเสื้อผ้าจองได้เฉพาะโซนเสื้อผ้า");
-    const { data, error } = await supabase.rpc("hold_stall", { p_stall: id });
-    if (error) { setPick(null); setErr(error.message); return; }
-    setPick(id); setNb(null);
-    setLeft(Math.max(1, Math.round((new Date(data as string).getTime() - Date.now()) / 1000)));
-    const { data: n } = await supabase.rpc("stall_neighbors", { p_stall: id }); setNb((n ?? []) as Nb[]);
+    choosing.current = true; const my = ++reqId.current; setErr("");
+    try {
+      const { data, error } = await supabase.rpc("hold_stall", { p_stall: id });
+      if (error) { close(null); setPick(null); setErr(error.message); return; }
+      // hold_stall เวอร์ชันใหม่คืน {expires_at, server_now} · เวอร์ชันเก่าคืนแค่ timestamp (string) → รองรับทั้งสองแบบ
+      const h = data as string | { expires_at?: string; server_now?: string } | null;
+      const expStr = typeof h === "string" ? h : h?.expires_at;
+      const srvNow = typeof h === "object" && h ? h.server_now : undefined;
+      skew.current = srvNow ? new Date(srvNow).getTime() - Date.now() : 0;
+      let expMs = expStr ? new Date(expStr).getTime() : NaN;
+      if (!Number.isFinite(expMs)) expMs = Date.now() + skew.current + holdMin * 60_000;   // กัน NaN: ใช้เวลากันล็อกจากตั้งค่าแทน
+      setExpiresAt(expMs); setNow(Date.now()); setPick(id); setNb(null);
+      const { data: n } = await supabase.rpc("stall_neighbors", { p_stall: id });
+      if (my === reqId.current) setNb((n ?? []) as Nb[]);                      // ทิ้งคำตอบที่ล้าสมัย
+    } finally { choosing.current = false; }
   }
   async function confirm() {
-    setBusy(true); setErr("");
-    const { error } = await supabase.rpc("book_stall", { p_stall: pick });
+    if (!pick || confirming.current) return;                                    // กดยืนยันรัว: ส่งครั้งเดียว
+    confirming.current = true; setBusy(true); setErr(""); const stall = pick;
+    const { error } = await supabase.rpc("book_stall", { p_stall: stall });
     setBusy(false);
-    if (error) { setErr(error.message); close(); await load(); return; }
-    setDone(pick); setPick(null);              // แสดง Success ก่อน แล้วค่อยพาไปบัตรร้าน
+    if (error) { confirming.current = false; setErr(error.message); close(stall); await poll(); return; }
+    doneRef.current = true; prevTaken.current?.add(stall);
+    setTaken((s) => new Set(s).add(stall)); setPick(null); setDone(stall);
     setTimeout(() => router.push("/detail"), 2300);
   }
-  if (!uid) return null;
+  if (!uid || !ready) return null;
 
-  const heldByOthers = new Set(Object.values(holds).filter((h) => h.owner_id !== uid && new Date(h.expires_at).getTime() > Date.now()).map((h) => h.stall_id));
+  const heldByOthers = new Set(holds.filter((h) => !h.mine && new Date(h.expires_at).getTime() > Date.now() + skew.current).map((h) => h.stall_id));
   const mineSet = new Set(mine.map(norm));
   const list = (nb ?? []).map((n) => ({ ...n, dup: n.products.filter((p) => mineSet.has(norm(p))) }));
   const conflict = list.some((n) => n.dup.length > 0);
-  // โซนเสื้อผ้า: ร้านเสื้อผ้า = มีหมวด "เสื้อผ้า" · เปิดจองทีละแถว D → C → B ตามความเต็มแบบเรียลไทม์
-  const isClothingShop = mine.some((p) => norm(p) === "เสื้อผ้า");
   const rowFull = (z: string) => [1, 2, 3, 4].every((n) => taken.has(z + n));
   const locked = new Set(isClothingShop ? ["C1", "C2", "C3", "C4", "B1", "B2", "B3", "B4"].filter((id) => (id[0] === "C" && !rowFull("D")) || (id[0] === "B" && !rowFull("C"))) : []);
-  const dim = new Set(ALL_IDS.filter((id) => CLOTHING.has(id) !== isClothingShop)); // ล็อกที่ร้านนี้จองไม่ได้ (จางลง แต่กดแล้วมีแจ้งเตือน)
-  const mm = String(Math.max(0, Math.floor(left / 60))).padStart(2, "0"), ss = String(Math.max(0, left % 60)).padStart(2, "0");
+  const dim = new Set(ALL_IDS.filter((id) => CLOTHING.has(id) !== isClothingShop));
+  const mm = String(Math.floor(left / 60)).padStart(2, "0"), ss = String(left % 60).padStart(2, "0");
 
   return (
     <Page title="เลือกล็อก" wide>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <div aria-live="polite" className="min-h-10 flex-1">{banner && <p className="animate-slide-down rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-200">📡 {banner}</p>}</div>
+        <div className="flex-1" />
         <span className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${live ? "border-emerald-400/50 bg-emerald-400/10 text-emerald-300 " : "border-white/10 text-slate-500"}`}>
           <i className={`size-2 rounded-full ${live ? "animate-pulse bg-emerald-400" : "bg-slate-500"}`} />{live ? "LIVE" : "OFFLINE"}</span>
       </div>
@@ -164,7 +164,7 @@ export default function Booking() {
             {conflict && <p role="alert" className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-200">มีสินค้าซ้ำกับร้านข้างเคียง จึงจองล็อกนี้ไม่ได้</p>}
 
             <Btn disabled={busy || nb === null || conflict} onClick={confirm} className="w-full py-3.5 disabled:grayscale">{busy ? "กำลังจอง…" : `ยืนยันจองล็อก ${pick}`}</Btn>
-            <button onClick={() => close()} className="w-full py-2 text-slate-400 transition hover:text-white">เลือกล็อกอื่น</button>
+            <button onClick={() => close(pick)} className="w-full py-2 text-slate-400 transition hover:text-white">เลือกล็อกอื่น</button>
           </div>
         </div>
       )}
