@@ -1,0 +1,24 @@
+# Project decisions
+
+Agreed choices and rules for this project, newest last. Each entry: `## D-n · date · title`, then Tags / Decision / Why (and Supersedes when it replaces an older one). Edit freely; the AI reads it through wridge `project_memory`.
+
+## D-1 · 2026-11-14 · เช็กของซ้ำกับร้านข้างเฉพาะร้านที่จองเสร็จแล้ว
+Decision: กฎของซ้ำในระยะ conflict_range เช็กกับ bookings ที่จองเสร็จแล้วเท่านั้น ไม่นับ holds ที่กดค้างอยู่ เช็กทั้งตอน hold_stall (กันกดล็อกที่จองไม่ได้แน่) และตอน book_stall ภายใต้ global advisory lock
+Why: hold เป็นของชั่วคราวและอาจถูกปล่อย การนับ hold จะบล็อกคนเกินจำเป็น ส่วน race ถูกปิดด้วย lock ตอนยืนยัน
+
+## D-2 · 2026-11-14 · เวลา hold ต่อคน 90 วินาที
+Decision: ตั้งเวลา hold ล็อกต่อคนเป็น 90 วินาที (ค่าใน app_settings ผ่านหน้าแอดมิน) และนับถอยหลังจากจำนวนวินาทีที่ server ส่งมา ไม่ใช้นาฬิกามือถือ
+Why: คน ~200 คนแย่ง 55 ล็อก: นานไปล็อกถูกกั้นโดยคนลังเล สั้นไปอ่านร้านข้างไม่ทันบนมือถือ
+
+## D-3 · 2026-11-14 · หน้าจองใช้ polling แทน Supabase Realtime
+Decision: หน้าจองดึงสถานะผังผ่าน RPC stall_board() ทุก 2 วินาที (เฉพาะตอนแท็บเปิด, หน่วงเริ่มสุ่ม, ดึงทันทีหลังกด/ยืนยัน) เลิกใช้ postgres_changes และ presence ทั้งฝั่งจองและแอดมิน แอดมินใช้ปุ่ม refresh หรือ poll ทุก 15 วินาที ความถูกต้องของการจองอยู่ที่ global advisory lock ในฐานข้อมูล ไม่ขึ้นกับการแสดงผล
+Why: Supabase Free จำกัด 200 connection และ 100 ข้อความ/วินาที (นับต่อผู้รับ) รับ ~200 ร้านแบบ realtime ไม่ได้ polling ไม่ติดลิมิตนี้ ภาระ ~100 req/s query เล็ก
+
+## D-4 · 2026-11-15 · เวลา hold ต่อคน 60 วินาที
+Decision: ใช้ hold 60 วินาที (app_settings.hold_minutes = 1) แทน 90 วินาที ไม่เปลี่ยนคอลัมน์เป็นหน่วยวินาที นับถอยหลังจากเวลา server เหมือนเดิม
+Why: ใกล้วันเปิดจอง ไม่ต้องแก้ DB/หน้าแอดมิน popup มีแค่ร้านข้างเคียงกับปุ่มยืนยัน 60 วินาทีพอ เอาเวลาไปทำ race ในฐานข้อมูลแทน
+Supersedes: D-2
+
+## D-5 · 2026-11-15 · กันจองชนกันด้วยคิวต่อแถว + unique constraint (ของจริงใน DB)
+Decision: ที่ทำจริง: book_stall / guard_shop_update / cancel_booking ใช้ pg_advisory_xact_lock ต่อแถว (A/B/C/D) แทน global lock และ RPC polling ชื่อ stall_snapshot() (ไม่ใช่ stall_board) ความถูกต้องข้ามแถวบังคับด้วย unique bookings.stall_id, bookings.shop_id, holds.owner_id และ book_stall ต้องถือ hold ของล็อกนั้น (supabase/02_fix_race.sql) ทดสอบด้วย supabase/race_test.js บน production 15 พ.ย. ผ่าน
+Why: กฎของซ้ำและลำดับแถวเสื้อผ้าดูแค่แถวเดียวกัน คิวต่อแถวพอและไม่ทำให้ทุกแถวรอกัน ส่วนกฎ 1 ร้าน 1 ล็อกข้ามแถวใช้ unique แทน

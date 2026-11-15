@@ -9,15 +9,25 @@ export const ALL = ALL_IDS;
 export const card = "rounded-3xl border border-white/10 bg-white/[0.04] p-5";
 export const fmtT = (x: string) => new Date(x).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Asia/Bangkok" });
 
+// (D-3) แอดมินไม่ใช้ Realtime: ดึงใหม่ทุก ADMIN_POLL_MS เฉพาะตอนแท็บเปิดอยู่ + ทันทีเมื่อกลับมาที่แท็บ / หลังกดแก้ไข (reload)
+export const ADMIN_POLL_MS = 15_000;
 export function useAdminShops() {
   const [rows, setRows] = useState<AShop[] | null>(null);
-  const reload = useCallback(async () => { const { data } = await supabase.rpc("admin_shops"); setRows((data ?? []) as AShop[]); }, []);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const reload = useCallback(async () => {
+    const { data, error } = await supabase.rpc("admin_shops");
+    if (error) return;                       // คงข้อมูลเดิมไว้ ไม่ล้างตารางเมื่อเน็ตสะดุด
+    setRows((data ?? []) as AShop[]); setUpdatedAt(new Date());
+  }, []);
   useEffect(() => {
+    let inflight = false;
+    const run = async () => { if (inflight || document.visibilityState !== "visible") return; inflight = true; try { await reload(); } finally { inflight = false; } };
     reload();
-    const ch = supabase.channel("admin-bk").on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => reload()).subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const t = setInterval(run, ADMIN_POLL_MS);
+    document.addEventListener("visibilitychange", run);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", run); };
   }, [reload]);
-  return { rows, reload };
+  return { rows, reload, updatedAt };
 }
 
 export const LineBadge = ({ s }: { s: AShop["line_status"] }) => {
