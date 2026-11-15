@@ -6,6 +6,8 @@ import type { Shop } from "@/lib/supabase";
 
 type V = Omit<Shop, "id">;
 const empty: V = { owner_name: "", student_id: "", shop_name: "", phone: "", products: [], guardians: [], line_joined: false };
+// ต้องตรงกับ check constraint ใน DB (shops_chk_arrays / shops_chk_name) — ไม่งั้นผู้ใช้จะเจอ error ชื่อ constraint ดิบๆ
+const MAX_PRODUCTS = 10, MAX_GUARDIANS = 20, MAX_SHOP_NAME = 80, MAX_OWNER_NAME = 100;
 const SUGGEST = ["เครื่องดื่ม", "ของทอด", "ขนมหวาน", "อาหารจานเดียว", "เสื้อผ้า", "งานคราฟต์"];
 const LINE_URL = process.env.NEXT_PUBLIC_LINE_GROUP_URL || "#";
 
@@ -41,6 +43,10 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
     // ส่งเฉพาะคอลัมน์ที่อนุญาต (ตรงกับ GRANT ในฐานข้อมูล) ไม่ spread ทั้งก้อน
     const clean = { owner_name: v.owner_name.trim(), student_id: lockedStudentId || v.student_id.trim(), shop_name: v.shop_name.trim(), phone: v.phone, line_joined: !!v.line_joined, products, guardians: v.guardians.map((s) => s.trim()).filter(Boolean) };
     if (!clean.products.length) return setErr("เพิ่มของที่ขายอย่างน้อย 1 อย่าง");
+    if (clean.products.length > MAX_PRODUCTS) return setErr(`ของที่ขายใส่ได้สูงสุด ${MAX_PRODUCTS} อย่าง`);
+    if (clean.guardians.length > MAX_GUARDIANS) return setErr(`บุคคลภายนอกใส่ได้สูงสุด ${MAX_GUARDIANS} คน`);
+    if (clean.shop_name.length > MAX_SHOP_NAME) return setErr(`ชื่อร้านยาวได้ไม่เกิน ${MAX_SHOP_NAME} ตัวอักษร`);
+    if (clean.owner_name.length > MAX_OWNER_NAME) return setErr(`ชื่อ–นามสกุลยาวได้ไม่เกิน ${MAX_OWNER_NAME} ตัวอักษร`);
     if (!/^0\d{8,9}$/.test(clean.phone.replace(/-/g, ""))) return setErr("เบอร์โทรไม่ถูกต้อง (เช่น 0812345678)");
     setBusy(true); const m = await onSubmit({ ...clean, phone: clean.phone.replace(/-/g, "") }); setBusy(false); if (m) setErr(m);
   }
@@ -83,14 +89,14 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
       </Card>
 
       <Card icon={<FaUsers />} title="ผู้ปกครอง / บุคคลภายนอก" badge={<span className="rounded-full bg-neon-cyan/10 px-3 py-1 text-xs text-neon-cyan">{v.guardians.filter(Boolean).length} คน</span>}>
-        <p className="text-sm text-slate-400">คนที่ไม่ใช่นักศึกษาแต่จะมาช่วยขาย ต้องลงชื่อไว้เพื่อผ่านจุดตรวจ เพิ่มได้ไม่จำกัด</p>
+        <p className="text-sm text-slate-400">คนที่ไม่ใช่นักศึกษาแต่จะมาช่วยขาย ต้องลงชื่อไว้เพื่อผ่านจุดตรวจ เพิ่มได้สูงสุด {MAX_GUARDIANS} คน</p>
         {v.guardians.map((g, i) => (
           <div key={i} className="flex gap-2">
             <input className={inputCls} value={g} placeholder="ชื่อ–นามสกุล" onChange={(e) => setV({ ...v, guardians: v.guardians.map((x, j) => (j === i ? e.target.value : x)) })} />
             <button type="button" aria-label="ลบ" onClick={() => setV({ ...v, guardians: v.guardians.filter((_, j) => j !== i) })} className="size-11 shrink-0 rounded-2xl border border-white/10 text-slate-400 hover:text-rose-300">×</button>
           </div>
         ))}
-        <button type="button" onClick={() => setV({ ...v, guardians: [...v.guardians, ""] })} className="w-full rounded-2xl border border-dashed border-neon-cyan/40 bg-neon-cyan/5 py-3 text-neon-cyan transition hover:bg-neon-cyan/10">+ เพิ่มบุคคลภายนอก</button>
+        {v.guardians.length < MAX_GUARDIANS && <button type="button" onClick={() => setV({ ...v, guardians: [...v.guardians, ""] })} className="w-full rounded-2xl border border-dashed border-neon-cyan/40 bg-neon-cyan/5 py-3 text-neon-cyan transition hover:bg-neon-cyan/10">+ เพิ่มบุคคลภายนอก</button>}
       </Card>
 
       {showLine && (
@@ -107,12 +113,18 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
         </Card>
       )}
 
+      {/* แจ้งการใช้ข้อมูลส่วนบุคคล (PDPA) ณ จุดเก็บข้อมูล — ข้อความควรให้องค์การนักศึกษายืนยัน */}
+      <p className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs leading-relaxed text-slate-400">
+        <b className="text-slate-300">การใช้ข้อมูลส่วนบุคคล</b> · ชื่อ รหัสนักศึกษา เบอร์โทร และรายชื่อบุคคลภายนอก ใช้เพื่อจัดสรรล็อก ติดต่อในวันงาน
+        และตรวจผ่านจุดเข้างานเท่านั้น เห็นได้เฉพาะทีมงานองค์การนักศึกษา และเก็บไว้เท่าที่จำเป็นสำหรับการจัดงานครั้งนี้
+        · ขอดู แก้ไข หรือลบข้อมูลได้ที่ทีมงานในกลุ่มไลน์ผู้ค้า
+      </p>
+
       {err && <p role="alert" className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{err}</p>}
       <div className="sticky bottom-3 z-10 space-y-2 pt-2">
         <button disabled={busy} className="w-full rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 py-4 text-lg font-bold text-white shadow-lg shadow-black/30 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60">
           {busy ? "กำลังบันทึก…" : `${submitLabel}  ›`}
         </button>
-        <p className="text-center text-xs text-slate-500">ข้อมูลถูกบันทึกอัตโนมัติ ออกจากหน้านี้ได้โดยไม่หาย</p>
       </div>
     </form>
   );

@@ -4,14 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useGuard } from "@/lib/useGuard";
-import { usePresence } from "@/lib/live";
+import { ADMIN_POLL_MS } from "@/lib/admin";
 import LogoutButton from "@/components/LogoutButton";
 
 const NAV = [["/admin", "ภาพรวม"], ["/admin/shops", "ร้านค้า"], ["/admin/map", "ผังล็อคสด"], ["/admin/line", "ตรวจกลุ่มไลน์"], ["/admin/settings", "กำหนดการ"]];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter(); const path = usePathname(); const uid = useGuard();
-  const [ok, setOk] = useState(false); const online = usePresence(true);
+  const [ok, setOk] = useState(false);
   useEffect(() => { if (uid) supabase.rpc("is_admin").then(({ data }) => (data ? setOk(true) : router.replace("/"))); }, [uid, router]);
   if (!ok) return null;
   return (
@@ -29,7 +29,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <main className="min-w-0 p-4 md:p-8 print:p-0">
         <div className="mb-5 flex justify-end print:hidden">
           <span className="flex items-center gap-2 rounded-full border border-emerald-400/50 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 shadow-[0_0_16px_rgba(52,211,153,.3)]">
-            <i className="size-2 animate-pulse rounded-full bg-emerald-400" />LIVE · {online} คนออนไลน์</span>
+            <i className="size-2 animate-pulse rounded-full bg-emerald-400" />อัปเดตอัตโนมัติทุก {ADMIN_POLL_MS / 1000} วินาที</span>
         </div>
         {children}
       </main>

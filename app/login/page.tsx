@@ -26,12 +26,20 @@ function Orbit() {
 
 export default function Login() {
   const router = useRouter();
-  const [msg, setMsg] = useState("");
+  // domain = อีเมลนอกมหาวิทยาลัย (ถูกออกจากระบบ) · อื่นๆ = ล็อกอินกับ Google ไม่สำเร็จ ลองใหม่ได้
+  const [err, setErr] = useState<{ domain: boolean; detail: string } | null>(null);
   useEffect(() => {
     const p = new URLSearchParams(location.search + "&" + location.hash.slice(1));
     const e = p.get("error_description");
-    if (e) return setMsg(/database error/i.test(e) ? DOMAIN_ERROR : e);
-    supabase.auth.getSession().then(async ({ data }) => { if (data.session) setMsg((await finishLogin(data.session.user, router.replace)) ?? ""); });
+    if (e) {
+      history.replaceState(null, "", location.pathname);   // ล้าง error ออกจาก URL กันขึ้นซ้ำตอนรีเฟรช
+      return setErr(/database error/i.test(e) ? { domain: true, detail: DOMAIN_ERROR } : { domain: false, detail: e });
+    }
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      const m = await finishLogin(data.session.user, router.replace);
+      if (m) setErr({ domain: true, detail: m });
+    });
   }, [router]);
 
   return (
@@ -47,16 +55,22 @@ export default function Login() {
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">{TOTAL_STALLS} ล็อก · 4 แถว</span>
           </div>
           <div className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-4 shadow-lg shadow-black/30 sm:p-5">
-            {msg && (
+            {err && (
               <div role="alert" className="animate-slide-down rounded-2xl border border-rose-400/40 bg-rose-500/10 p-4">
-                <p className="font-semibold text-rose-300">อีเมลนี้เข้าใช้งานไม่ได้</p>
-                <p className="mt-1 text-sm text-slate-300">{msg} ระบบจึงออกจากระบบให้อัตโนมัติ</p>
+                {err.domain ? (<>
+                  <p className="font-semibold text-rose-300">อีเมลนี้เข้าใช้งานไม่ได้</p>
+                  <p className="mt-1 text-sm text-slate-300">{err.detail} ระบบจึงออกจากระบบให้อัตโนมัติ</p>
+                </>) : (<>
+                  <p className="font-semibold text-rose-300">เข้าสู่ระบบไม่สำเร็จ</p>
+                  <p className="mt-1 text-sm text-slate-300">การเชื่อมต่อกับ Google ขัดข้องชั่วคราว กรุณากดเข้าสู่ระบบอีกครั้ง</p>
+                  <p className="mt-2 break-all text-xs text-slate-500">รายละเอียด: {err.detail}</p>
+                </>)}
               </div>
             )}
-            <button onClick={async () => { setMsg(""); const { error } = await loginWithGoogle(); if (error) setMsg(error.message); }}
+            <button onClick={async () => { setErr(null); const { error } = await loginWithGoogle(); if (error) setErr({ domain: false, detail: error.message }); }}
               className="flex w-full items-center justify-center gap-3 rounded-2xl bg-white px-5 py-3.5 font-semibold text-slate-900 transition hover:brightness-110 active:scale-[0.98]">
               <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-2.9-.8-4.7s.3-3.3.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
-              {msg ? "ลองใหม่ด้วยอีเมลมหาวิทยาลัย" : "เข้าสู่ระบบด้วยอีเมลมหาวิทยาลัย"}
+              {err?.domain ? "ลองใหม่ด้วยอีเมลมหาวิทยาลัย" : err ? "ลองเข้าสู่ระบบอีกครั้ง" : "เข้าสู่ระบบด้วยอีเมลมหาวิทยาลัย"}
             </button>
             <p className="text-sm text-emerald-300">✓ รับเฉพาะอีเมล @kmutnb.ac.th และ @email.kmutnb.ac.th เท่านั้น</p>
           </div>
