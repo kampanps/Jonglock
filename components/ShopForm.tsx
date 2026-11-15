@@ -38,7 +38,8 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setErr("");
     const products = draft.trim() && !v.products.includes(draft.trim()) ? [...v.products, draft.trim()] : v.products;
-    const clean = { ...v, student_id: lockedStudentId || v.student_id, products, guardians: v.guardians.map((s) => s.trim()).filter(Boolean) };
+    // ส่งเฉพาะคอลัมน์ที่อนุญาต (ตรงกับ GRANT ในฐานข้อมูล) ไม่ spread ทั้งก้อน
+    const clean = { owner_name: v.owner_name.trim(), student_id: lockedStudentId || v.student_id.trim(), shop_name: v.shop_name.trim(), phone: v.phone, line_joined: !!v.line_joined, products, guardians: v.guardians.map((s) => s.trim()).filter(Boolean) };
     if (!clean.products.length) return setErr("เพิ่มของที่ขายอย่างน้อย 1 อย่าง");
     if (!/^0\d{8,9}$/.test(clean.phone.replace(/-/g, ""))) return setErr("เบอร์โทรไม่ถูกต้อง (เช่น 0812345678)");
     setBusy(true); const m = await onSubmit({ ...clean, phone: clean.phone.replace(/-/g, "") }); setBusy(false); if (m) setErr(m);

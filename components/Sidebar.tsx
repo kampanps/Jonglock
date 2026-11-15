@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FaPen, FaUserShield, FaSignOutAlt } from "react-icons/fa";
 import { supabase } from "@/lib/supabase";
+import { checkAdmin } from "@/lib/adminCache";
 
 type ItemProps = { icon: ReactNode; children: ReactNode; active?: boolean; tone?: string; href?: string; onClick?: () => void };
 
@@ -19,8 +20,10 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false); const [admin, setAdmin] = useState(false); const [email, setEmail] = useState("");
 
   useEffect(() => {
-    supabase.rpc("is_admin").then(({ data }) => setAdmin(!!data));
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
+    supabase.auth.getSession().then(({ data }) => {   // อ่านจากเครื่อง ไม่ยิงเน็ต
+      const u = data.session?.user; setEmail(u?.email ?? "");
+      if (u) checkAdmin(u.id).then(setAdmin);
+    });
   }, []);
   useEffect(() => setOpen(false), [path]);
   useEffect(() => {

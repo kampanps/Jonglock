@@ -1,5 +1,6 @@
 "use client";
 import VenueRow from "./VenueRow";
+import { rowLen } from "@/lib/venue";
 import { ReactNode, useState } from "react";
 
 const S = ({ children, className = "" }: { children: ReactNode; className?: string }) => (
@@ -18,7 +19,7 @@ type Props = { taken: Set<string>; mine?: string | null; selected?: string | nul
 
 export default function StallMap({ taken, mine = null, selected = null, held = new Set<string>(), readOnly = false, pickTaken = false, onPick }: Props) {
   const [zoom, setZoom] = useState<string | null>(null);
-  const freeIn = (z: string) => (z === "A" ? 13 : 14) - Array.from(taken).filter((id) => id[0] === z).length; // ลดลงเรียลไทม์ตาม taken
+  const freeIn = (z: string) => rowLen(z) - Array.from(taken).filter((id) => id[0] === z).length; // ลดลงเรียลไทม์ตาม taken
   return (
     <div className="space-y-3">
       <S className="mx-auto h-9 w-1/2 rounded-xl border border-white/10 bg-white/5">เต็นท์ศิลปิน</S>
@@ -55,7 +56,7 @@ export default function StallMap({ taken, mine = null, selected = null, held = n
                       <b className="text-lg text-white">{z}</b><span className="text-[11px] text-emerald-300">{freeIn(z)} ว่าง</span>
                     </button>
                     <div className="flex flex-1 gap-1.5 sm:gap-2">
-                      {Array.from({ length: z === "A" ? 13 : 14 }, (_, i) => z + (i + 1)).map((id) => {
+                      {Array.from({ length: rowLen(z) }, (_, i) => z + (i + 1)).map((id) => {
                         const t = taken.has(id), h = held.has(id), isMine = id === mine, sel = id === selected;
                         const color = isMine ? "border-violet-300 bg-violet-400/30 text-white shadow-glow-violet"
                           : sel ? "border-neon-cyan bg-neon-cyan/20 text-white shadow-glow-cyan ring-2 ring-neon-cyan scale-105"

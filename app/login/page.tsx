@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { TOTAL_STALLS } from "@/lib/venue";
 import { finishLogin, loginWithGoogle, DOMAIN_ERROR } from "@/lib/auth";
 
 const ring = "absolute rounded-full border border-neon-violet/20";
@@ -42,8 +43,8 @@ export default function Login() {
           <span className="inline-flex items-center gap-2 rounded-full border border-neon-cyan/30 bg-neon-cyan/10 px-3 py-1 text-xs text-neon-cyan">จัดโดย องค์การนักศึกษา</span>
           <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl">KMUTNB PRACHINBURI<br />MUSIC FEST 2569</h1>
           <div className="flex flex-wrap gap-2 text-xs text-slate-300 sm:text-sm">
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">เปิดจอง 16 – 22 พ.ย. 69</span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">55 ล็อก · 4 แถว</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">เปิดจอง 1 – 20 ต.ค. 69</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">{TOTAL_STALLS} ล็อก · 4 แถว</span>
           </div>
           <div className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-4 shadow-lg shadow-black/30 sm:p-5">
             {msg && (

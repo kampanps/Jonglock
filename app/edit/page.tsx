@@ -13,8 +13,9 @@ export default function Edit() {
   return (
     <Page title="แก้ไขข้อมูลร้านค้า">
       <p className="mb-5 text-sm text-slate-400">เลขที่ล็อกแก้ไขไม่ได้ หากต้องการเปลี่ยนล็อกให้ยกเลิกแล้วจองใหม่</p>
-      <ShopForm initial={shop} tone="ok" submitLabel="แก้ไข" onSubmit={async (v) => {
-        const { error } = await supabase.from("shops").update(v).eq("id", shop.id);
+      <ShopForm initial={shop} lockedStudentId={shop.student_id} tone="ok" submitLabel="แก้ไข" onSubmit={async (v) => {
+        const rest: Partial<typeof v> = { ...v }; delete rest.student_id;   // student_id แก้ไม่ได้ (ไม่มีสิทธิ์ UPDATE)
+        const { error } = await supabase.from("shops").update(rest).eq("id", shop.id);
         if (error) return error.message; // trigger เช็กวันที่ + ของซ้ำในระยะ 3 ร้าน
         router.push("/detail");
       }} />

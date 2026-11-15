@@ -14,9 +14,9 @@ export default function Register() {
     (async () => {
       const { data: shop } = await supabase.from("shops").select("id").maybeSingle();
       if (shop) return router.replace("/");
-      const { data } = await supabase.auth.getUser();
-      setSid(studentIdFromEmail(data.user?.email));
-      setName((data.user?.user_metadata?.full_name as string) ?? ""); // ชื่อจากบัญชี Google
+      const { data } = await supabase.auth.getSession();
+      setSid(studentIdFromEmail(data.session?.user.email));
+      setName((data.session?.user.user_metadata?.full_name as string) ?? ""); // ชื่อจากบัญชี Google
     })();
   }, [uid, router]);
   if (name === null) return null;
@@ -26,7 +26,7 @@ export default function Register() {
       <ShopForm showLine lockedStudentId={sid} submitLabel="บันทึกและไปเลือกล็อค"
         initial={{ owner_name: name, student_id: sid, shop_name: "", phone: "", products: [], guardians: [], line_joined: false }}
         onSubmit={async (v) => {
-          const { error } = await supabase.from("shops").insert({ ...v, owner_id: uid });
+          const { error } = await supabase.from("shops").insert(v)   // owner_id ตั้งโดยฐานข้อมูล (default auth.uid());
           if (error) return error.code === "23505" ? "คุณลงทะเบียนร้านไว้แล้ว" : error.message;
           router.push("/booking");
         }} />

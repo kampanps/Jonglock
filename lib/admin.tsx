@@ -1,10 +1,11 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { ALL_IDS } from "./venue";
 
 export type AShop = { booking_id: string; stall_id: string; booked_at: string; shop_id: string; shop_name: string; products: string[]; owner_name: string;
   student_id: string; phone: string; email: string | null; guardians: string[]; line_status: "none" | "pending" | "verified" | "missing" };
-export const ALL = ["A", "B", "C", "D"].flatMap((z) => Array.from({ length: 12 }, (_, i) => z + (i + 1)));
+export const ALL = ALL_IDS;
 export const card = "rounded-3xl border border-white/10 bg-white/[0.04] p-5";
 export const fmtT = (x: string) => new Date(x).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Asia/Bangkok" });
 

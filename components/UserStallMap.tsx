@@ -1,5 +1,6 @@
 "use client";
 import VenueRow from "./VenueRow";
+import { rowLen } from "@/lib/venue";
 import { ReactNode, useState } from "react";
 // ผังฝั่งผู้ใช้ (แยกจาก StallMap ของ Admin): แยกโซนเสื้อผ้า/อาหาร + ล็อกแถวที่ยังไม่เปิด + เอฟเฟกต์เรียบๆ
 
@@ -22,7 +23,6 @@ type Props = { taken: Set<string>; mine?: string | null; selected?: string | nul
 
 export default function UserStallMap({ taken, mine = null, selected = null, held = new Set<string>(), locked = new Set<string>(), dim = new Set<string>(), readOnly = false, onPick }: Props) {
   const [zoom, setZoom] = useState<string | null>(null);
-  const rowLen = (z: string) => (z === "A" ? 13 : 14);
   const freeIn = (z: string) => rowLen(z) - Array.from(taken).filter((id) => id[0] === z).length;
 
   const cell = (id: string, z: string) => {
