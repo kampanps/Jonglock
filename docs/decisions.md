@@ -22,3 +22,11 @@ Supersedes: D-2
 ## D-5 · 2026-11-15 · กันจองชนกันด้วยคิวต่อแถว + unique constraint (ของจริงใน DB)
 Decision: ที่ทำจริง: book_stall / guard_shop_update / cancel_booking ใช้ pg_advisory_xact_lock ต่อแถว (A/B/C/D) แทน global lock และ RPC polling ชื่อ stall_snapshot() (ไม่ใช่ stall_board) ความถูกต้องข้ามแถวบังคับด้วย unique bookings.stall_id, bookings.shop_id, holds.owner_id และ book_stall ต้องถือ hold ของล็อกนั้น (supabase/02_fix_race.sql) ทดสอบด้วย supabase/race_test.js บน production 15 พ.ย. ผ่าน
 Why: กฎของซ้ำและลำดับแถวเสื้อผ้าดูแค่แถวเดียวกัน คิวต่อแถวพอและไม่ทำให้ทุกแถวรอกัน ส่วนกฎ 1 ร้าน 1 ล็อกข้ามแถวใช้ unique แทน
+
+## D-6 · 2026-11-15 · Code freeze ก่อนเปิดจอง 16 พ.ย.
+Decision: ตั้งแต่ 15 พ.ย. ไม่แก้โค้ดหน้าเว็บ/ฟังก์ชันในฐานข้อมูลอีกจนปิดจอง ยกเว้นบั๊กที่ทำให้จองไม่ได้หรือจองผิด lint และ refactor ทำหลังจบงาน ระหว่างนี้แก้ได้แค่ค่าตั้ง (เวลา, rate limit) และข้อมูล
+Why: ระบบผ่านการทดสอบ race บน production แล้ว การแก้เพิ่มในวันก่อนเปิดเสี่ยงกว่าประโยชน์
+
+## D-7 · 2026-11-16 · รับบัญชีหน่วยงาน @op.kmutnb.ac.th
+Decision: โดเมนที่รับ: @kmutnb.ac.th, @email.kmutnb.ac.th, @op.kmutnb.ac.th (regex @((email|op)\.)?kmutnb\.ac\.th$ ใน is_kmutnb() และ enforce_domain(), ALLOWED_DOMAINS ในหน้าเว็บ) บัญชี @op เป็นหน่วยงาน ไม่มีรหัสนักศึกษา: ฟอร์มไม่ถาม บันทึก student_id = '' และหน้าแอดมิน/บัตรร้านแสดงว่า "หน่วยงาน" วิดีโอไม่แก้
+Why: หน่วยงานต้องจองล็อกได้ อีเมลหน่วยงานเป็นชื่อหน่วยงาน ไม่มีรหัสนักศึกษาให้ดึง

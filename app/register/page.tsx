@@ -5,17 +5,17 @@ import { supabase } from "@/lib/supabase";
 import { useGuard } from "@/lib/useGuard";
 import { Page } from "@/components/ui";
 import ShopForm from "@/components/ShopForm";
-import { studentIdFromEmail } from "@/lib/studentId";
+import { isAgencyEmail, studentIdFromEmail } from "@/lib/studentId";
 
 export default function Register() {
-  const router = useRouter(); const uid = useGuard(); const [name, setName] = useState<string | null>(null); const [sid, setSid] = useState("");
+  const router = useRouter(); const uid = useGuard(); const [name, setName] = useState<string | null>(null); const [sid, setSid] = useState(""); const [agency, setAgency] = useState(false);
   useEffect(() => {
     if (!uid) return;
     (async () => {
       const { data: shop } = await supabase.from("shops").select("id").maybeSingle();
       if (shop) return router.replace("/");
       const { data } = await supabase.auth.getSession();
-      setSid(studentIdFromEmail(data.session?.user.email));
+      setSid(studentIdFromEmail(data.session?.user.email)); setAgency(isAgencyEmail(data.session?.user.email));
       setName((data.session?.user.user_metadata?.full_name as string) ?? ""); // ชื่อจากบัญชี Google
     })();
   }, [uid, router]);
@@ -23,7 +23,7 @@ export default function Register() {
   return (
     <Page title="ลงทะเบียนร้านของคุณ">
       <p className="-mt-2 mb-5 text-center text-slate-400">กรอกครั้งเดียว แก้ไขได้ทุกเมื่อก่อนวันงาน</p>
-      <ShopForm showLine lockedStudentId={sid} submitLabel="บันทึกและไปเลือกล็อค"
+      <ShopForm showLine lockedStudentId={sid} agency={agency} submitLabel="บันทึกและไปเลือกล็อค"
         initial={{ owner_name: name, student_id: sid, shop_name: "", phone: "", products: [], guardians: [], line_joined: false }}
         onSubmit={async (v) => {
           const { error } = await supabase.from("shops").insert(v)   // owner_id ตั้งโดยฐานข้อมูล (default auth.uid());

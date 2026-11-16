@@ -18,7 +18,7 @@ export default function AdminShopPanel({ shop, rows, onDone }: { shop: AShop; ro
         <div><h3 className="text-lg font-bold text-white">{shop.shop_name}</h3><p className="text-xs text-slate-400">แถว {shop.stall_id[0]} · คอลัมน์ {shop.stall_id.slice(1)} · จองเมื่อ {fmtT(shop.booked_at)}</p></div>
       </div>
       <div className="flex flex-wrap gap-2">{shop.products.map((p) => <span key={p} className="rounded-full border border-violet-400/40 bg-violet-400/15 px-3 py-1 text-sm text-violet-100">{p}</span>)}</div>
-      <div><Row k="ชื่อ" v={shop.owner_name} /><Row k="รหัสนักศึกษา" v={shop.student_id} /><Row k="อีเมล" v={shop.email} /><Row k="เบอร์โทร" v={shop.phone} />
+      <div><Row k="ชื่อ" v={shop.owner_name} /><Row k="รหัสนักศึกษา" v={shop.student_id || "— (หน่วยงาน)"} /><Row k="อีเมล" v={shop.email} /><Row k="เบอร์โทร" v={shop.phone} />
         <div className="flex justify-between py-2 text-sm"><span className="text-slate-500">กลุ่มไลน์</span><LineBadge s={shop.line_status} /></div></div>
       <div><p className="mb-1 text-sm text-slate-400">บุคคลภายนอก · {shop.guardians.length} คน</p>{shop.guardians.map((g) => <p key={g} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100">{g}</p>)}</div>
       {err && <p role="alert" className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-200">{err}</p>}

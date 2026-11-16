@@ -71,7 +71,7 @@ export default function Detail() {
               <div className="grid grid-cols-2 gap-x-4 gap-y-4">
                 <Info k="เจ้าของร้าน">{shop.owner_name}</Info>
                 <Info k="เบอร์โทร">{shop.phone}</Info>
-                <Info k="รหัสนักศึกษา">{shop.student_id}</Info>
+                <Info k="รหัสนักศึกษา">{shop.student_id || "— (หน่วยงาน)"}</Info>
                 <Info k="กลุ่มไลน์">{shop.line_joined ? <span className="text-emerald-300">✓ เข้ากลุ่มแล้ว</span> : <span className="text-amber-300">ยังไม่ได้เข้ากลุ่ม</span>}</Info>
               </div>
               <div className="border-t border-white/10 pt-4">
