@@ -30,3 +30,8 @@ Why: ระบบผ่านการทดสอบ race บน production แ
 ## D-7 · 2026-11-16 · รับบัญชีหน่วยงาน @op.kmutnb.ac.th
 Decision: โดเมนที่รับ: @kmutnb.ac.th, @email.kmutnb.ac.th, @op.kmutnb.ac.th (regex @((email|op)\.)?kmutnb\.ac\.th$ ใน is_kmutnb() และ enforce_domain(), ALLOWED_DOMAINS ในหน้าเว็บ) บัญชี @op เป็นหน่วยงาน ไม่มีรหัสนักศึกษา: ฟอร์มไม่ถาม บันทึก student_id = '' และหน้าแอดมิน/บัตรร้านแสดงว่า "หน่วยงาน" วิดีโอไม่แก้
 Why: หน่วยงานต้องจองล็อกได้ อีเมลหน่วยงานเป็นชื่อหน่วยงาน ไม่มีรหัสนักศึกษาให้ดึง
+
+## D-8 · 2026-11-16 · รับบัญชีหน่วยงาน @itm.kmutnb.ac.th
+Decision: เพิ่ม @itm.kmutnb.ac.th เป็นบัญชีหน่วยงานแบบเดียวกับ @op (ไม่มีรหัสนักศึกษา) regex ทุกที่เป็น @((email|op|itm)\.)?kmutnb\.ac\.th$ และ isAgencyEmail = @(op|itm)\.kmutnb\.ac\.th$ (supabase/04_add_itm_domain.sql)
+Why: หน่วยงานที่ใช้โดเมน itm ต้องจองล็อกได้
+Supersedes: D-7
