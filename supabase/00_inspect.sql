@@ -56,7 +56,7 @@ counts as (
   select format('shops=%s  bookings=%s  holds=%s  stalls=%s  admins=%s  non_kmutnb_users=%s  shops_with_2plus_bookings=%s  users_with_2plus_holds=%s',
     (select count(*) from public.shops), (select count(*) from public.bookings), (select count(*) from public.holds),
     (select count(*) from public.stalls), (select count(*) from public.admins),
-    (select count(*) from auth.users where email !~* '@(email\.)?kmutnb\.ac\.th$'),
+    (select count(*) from auth.users where email !~* '@((email|op)\.)?kmutnb\.ac\.th$'),
     (select count(*) from (select shop_id from public.bookings group by shop_id having count(*) > 1) d),
     (select count(*) from (select owner_id from public.holds group by owner_id having count(*) > 1) d)) t
 ),

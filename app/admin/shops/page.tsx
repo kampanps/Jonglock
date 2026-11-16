@@ -18,7 +18,7 @@ export default function Shops() {
     const day = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" });
     downloadCsv(`shops-${day}${row !== "ทั้งหมด" ? `-row${row}` : ""}${s ? "-search" : ""}.csv`,
       ["ล็อค", "ชื่อร้าน", "ของที่ขาย", "เจ้าของร้าน", "รหัสนักศึกษา", "เบอร์โทร", "บุคคลภายนอก (จำนวน)", "รายชื่อบุคคลภายนอก", "กลุ่มไลน์", "จองเมื่อ"],
-      shown.map((r) => [r.stall_id, r.shop_name, r.products.join(", "), r.owner_name, r.student_id, r.phone, r.guardians.length, r.guardians.join(", "),
+      shown.map((r) => [r.stall_id, r.shop_name, r.products.join(", "), r.owner_name, r.student_id || "หน่วยงาน", r.phone, r.guardians.length, r.guardians.join(", "),
         LINE[r.line_status], new Date(r.booked_at).toLocaleString("sv-SE", { timeZone: "Asia/Bangkok" }).slice(0, 16)]),
       [4, 5]); // รหัสนักศึกษา, เบอร์โทร เป็นข้อความ
   };
@@ -53,7 +53,7 @@ export default function Shops() {
               <tr key={r.booking_id} onClick={() => setSel(r)} className="cursor-pointer transition hover:bg-white/5">
                 <td className="px-4 py-3"><StallChip id={r.stall_id} /></td>
                 <td className="px-4 py-3"><p className="font-semibold text-white">{r.shop_name}</p><p className="text-xs text-slate-500">{r.products.join(" · ")}</p></td>
-                <td className="px-4 py-3"><p className="text-slate-100">{r.owner_name}</p><p className="text-xs text-slate-500">{r.student_id}</p></td>
+                <td className="px-4 py-3"><p className="text-slate-100">{r.owner_name}</p><p className="text-xs text-slate-500">{r.student_id || "หน่วยงาน"}</p></td>
                 <td className="px-4 py-3 text-slate-200">{r.phone}</td>
                 <td className="px-4 py-3 text-neon-cyan">{r.guardians.length ? `${r.guardians.length} คน` : <span className="text-slate-600">—</span>}</td>
                 <td className="px-4 py-3"><LineBadge s={r.line_status} /></td>
@@ -89,7 +89,7 @@ export default function Shops() {
             <tr key={r.booking_id} className="break-inside-avoid [page-break-inside:avoid]">
               <td className="border border-gray-600 p-2 font-bold">{r.stall_id}</td>
               <td className="border border-gray-600 p-2"><p className="font-semibold">{r.shop_name}</p><p className="text-xs">{r.products.join(", ")}</p></td>
-              <td className="border border-gray-600 p-2"><p>{r.owner_name}</p><p className="text-xs">{r.student_id}</p></td>
+              <td className="border border-gray-600 p-2"><p>{r.owner_name}</p><p className="text-xs">{r.student_id || "หน่วยงาน"}</p></td>
               <td className="border border-gray-600 p-2">{r.phone}</td>
               <td className="h-20 border border-gray-600 px-2 py-8" />
             </tr>

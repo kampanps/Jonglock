@@ -24,8 +24,9 @@ const Field = ({ label, hint, children }: { label: string; hint?: string; childr
   <div><label className="mb-1.5 block text-sm text-slate-300">{label} <span className="text-neon-pink">*</span></label>{children}{hint && <p className="mt-1.5 text-xs text-slate-500">{hint}</p>}</div>
 );
 
-export default function ShopForm({ initial = empty, submitLabel, showLine, lockedStudentId, onSubmit }:
-  { initial?: V; submitLabel: string; showLine?: boolean; lockedStudentId?: string; tone?: string; onSubmit: (v: V) => Promise<string | void> }) {
+// agency = บัญชีหน่วยงาน (@op.kmutnb.ac.th): ไม่มีรหัสนักศึกษา ไม่ต้องกรอก และบันทึก student_id เป็นค่าว่าง
+export default function ShopForm({ initial = empty, submitLabel, showLine, lockedStudentId, agency, onSubmit }:
+  { initial?: V; submitLabel: string; showLine?: boolean; lockedStudentId?: string; agency?: boolean; tone?: string; onSubmit: (v: V) => Promise<string | void> }) {
   const [v, setV] = useState<V>({ ...initial, products: initial.products.filter(Boolean) });
   const [draft, setDraft] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   const set = (k: keyof V) => (e: React.ChangeEvent<HTMLInputElement>) => setV({ ...v, [k]: e.target.value });
@@ -41,7 +42,7 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
     e.preventDefault(); setErr("");
     const products = draft.trim() && !v.products.includes(draft.trim()) ? [...v.products, draft.trim()] : v.products;
     // ส่งเฉพาะคอลัมน์ที่อนุญาต (ตรงกับ GRANT ในฐานข้อมูล) ไม่ spread ทั้งก้อน
-    const clean = { owner_name: v.owner_name.trim(), student_id: lockedStudentId || v.student_id.trim(), shop_name: v.shop_name.trim(), phone: v.phone, line_joined: !!v.line_joined, products, guardians: v.guardians.map((s) => s.trim()).filter(Boolean) };
+    const clean = { owner_name: v.owner_name.trim(), student_id: agency ? "" : lockedStudentId || v.student_id.trim(), shop_name: v.shop_name.trim(), phone: v.phone, line_joined: !!v.line_joined, products, guardians: v.guardians.map((s) => s.trim()).filter(Boolean) };
     if (!clean.products.length) return setErr("เพิ่มของที่ขายอย่างน้อย 1 อย่าง");
     if (clean.products.length > MAX_PRODUCTS) return setErr(`ของที่ขายใส่ได้สูงสุด ${MAX_PRODUCTS} อย่าง`);
     if (clean.guardians.length > MAX_GUARDIANS) return setErr(`บุคคลภายนอกใส่ได้สูงสุด ${MAX_GUARDIANS} คน`);
@@ -55,14 +56,16 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
     <form onSubmit={submit} className="mx-auto max-w-xl space-y-5">
       <Card icon={<FaUser />} title="ผู้ลงทะเบียน">
         <Field label="ชื่อ–นามสกุล" hint="ดึงจากบัญชีมหาวิทยาลัยให้แล้ว แก้ไขได้"><input required className={inputCls} value={v.owner_name} onChange={set("owner_name")} /></Field>
-        <Field label="รหัสนักศึกษา" hint={lockedStudentId ? "ดึงจากอีเมลมหาวิทยาลัยอัตโนมัติ แก้ไขไม่ได้" : undefined}>
+        {agency ? (
+          <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">🏢 บัญชีหน่วยงาน (@op.kmutnb.ac.th) — ไม่ต้องใช้รหัสนักศึกษา</p>
+        ) : <Field label="รหัสนักศึกษา" hint={lockedStudentId ? "ดึงจากอีเมลมหาวิทยาลัยอัตโนมัติ แก้ไขไม่ได้" : undefined}>
           {lockedStudentId ? (
             <div className="relative">
               <input readOnly tabIndex={-1} aria-readonly value={lockedStudentId} className="w-full cursor-not-allowed rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-2.5 pr-11 text-slate-400 outline-none" />
               <span aria-hidden className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">🔒</span>
             </div>
           ) : <input required inputMode="numeric" className={inputCls} value={v.student_id} onChange={set("student_id")} />}
-        </Field>
+        </Field>}
         <Field label="เบอร์โทร" hint="ทีมงานจะติดต่อเบอร์นี้ในวันงาน"><input required inputMode="tel" className={inputCls} value={v.phone} onChange={set("phone")} placeholder="081-234-5678" /></Field>
       </Card>
 
