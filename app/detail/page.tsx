@@ -89,6 +89,7 @@ export default function Detail() {
         {err && <p role="alert" className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-200">{err}</p>}
 
         <button onClick={() => router.push("/preview")} className="w-full rounded-2xl border border-neon-cyan/30 bg-neon-cyan/5 py-3 font-medium text-neon-cyan transition hover:bg-neon-cyan/10">ดูผังร้านค้า (Preview)</button>
+        <button onClick={() => router.push("/shops")} className="w-full rounded-2xl border border-white/15 bg-white/5 py-3 font-medium text-slate-100 transition hover:bg-white/10">ดูร้านที่จองล็อกแล้ว</button>
         <div className="grid grid-cols-2 gap-3">
           <button aria-disabled={!canEdit} onClick={() => (canEdit ? router.push("/edit") : setLate(true))}
             className={`flex items-center justify-center gap-2 rounded-2xl border py-3.5 font-medium transition ${canEdit ? "border-white/15 bg-white/5 text-slate-100 hover:bg-white/10" : off}`}><FaPen />แก้ไขข้อมูล</button>

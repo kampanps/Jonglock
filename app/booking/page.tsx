@@ -132,7 +132,8 @@ export default function Booking() {
   return (
     <Page title="เลือกล็อก" wide>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex-1" />
+        {/* แท็บใหม่: ล็อกที่ hold ไว้ไม่หลุด */}
+        <a href="/shops" target="_blank" rel="noopener" className="-ml-2 inline-flex min-h-11 items-center rounded-xl px-2 text-sm text-sky-200 underline underline-offset-2 transition hover:bg-white/5 hover:text-white">ดูร้านที่จองแล้ว ↗</a>
         <span className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${live ? "border-emerald-400/50 bg-emerald-400/10 text-emerald-300 " : "border-white/10 text-slate-500"}`}>
           <i className={`size-2 rounded-full ${live ? "animate-pulse bg-emerald-400" : "bg-slate-500"}`} />{live ? "LIVE" : "OFFLINE"}</span>
       </div>

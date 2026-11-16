@@ -88,7 +88,12 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
             <button type="button" key={s} onClick={() => addTag(s)} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 transition hover:border-neon-cyan/50 hover:text-white">+ {s}</button>
           ))}
         </div>
-        <p className="flex gap-2 rounded-2xl bg-sky-400/10 p-3 text-sm text-sky-200"><FaTag className="mt-1 shrink-0" />ระบบใช้ข้อมูลนี้ไม่ให้คุณขายของซ้ำกับร้านในระยะ 3 ล็อกซ้าย–ขวา</p>
+        <div className="flex gap-2 rounded-2xl bg-sky-400/10 p-3 text-sm text-sky-200"><FaTag className="mt-1 shrink-0" />
+          <p>ระบบใช้ข้อมูลนี้ไม่ให้คุณขายของซ้ำกับร้านในระยะ 3 ล็อกซ้าย–ขวา
+            {/* แท็บใหม่: ข้อมูลที่กรอกอยู่ในฟอร์มไม่หาย */}
+            <a href="/shops" target="_blank" rel="noopener" className="mt-1 block w-fit whitespace-nowrap font-medium text-sky-100 underline underline-offset-2 hover:text-white">ดูว่าร้านไหนขายอะไรแล้ว ↗</a>
+          </p>
+        </div>
       </Card>
 
       <Card icon={<FaUsers />} title="ผู้ปกครอง / บุคคลภายนอก" badge={<span className="rounded-full bg-neon-cyan/10 px-3 py-1 text-xs text-neon-cyan">{v.guardians.filter(Boolean).length} คน</span>}>

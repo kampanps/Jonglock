@@ -2,7 +2,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FaPen, FaUserShield, FaSignOutAlt } from "react-icons/fa";
+import { FaPen, FaUserShield, FaSignOutAlt, FaStore, FaHome } from "react-icons/fa";
 import { supabase } from "@/lib/supabase";
 import { checkAdmin } from "@/lib/adminCache";
 
@@ -55,6 +55,9 @@ export default function Sidebar() {
           </button>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3">
+          {/* "/" พาไปหน้าที่ถูกตามสถานะ: ลงทะเบียน / เลือกล็อก / บัตรร้าน */}
+          <Item href="/" icon={<FaHome />} active={["/", "/register", "/booking", "/detail"].includes(path)}>หน้าหลัก</Item>
+          <Item href="/shops" icon={<FaStore />} active={path === "/shops"}>ร้านที่จองล็อกแล้ว</Item>
           <Item href="/edit" icon={<FaPen />} active={path === "/edit"}>แก้ไขข้อมูลร้านค้า</Item>
           {admin && <Item href="/admin" icon={<FaUserShield />}>แผงควบคุมแอดมิน</Item>}
           <div className="!my-3 border-t border-white/10" />
