@@ -24,7 +24,7 @@ const Field = ({ label, hint, children }: { label: string; hint?: string; childr
   <div><label className="mb-1.5 block text-sm text-slate-300">{label} <span className="text-neon-pink">*</span></label>{children}{hint && <p className="mt-1.5 text-xs text-slate-500">{hint}</p>}</div>
 );
 
-// agency = บัญชีหน่วยงาน (@op / @itm .kmutnb.ac.th): ไม่มีรหัสนักศึกษา ไม่ต้องกรอก และบันทึก student_id เป็นค่าว่าง
+// agency = บัญชีคณะ/หน่วยงาน (AGENCY_DOMAINS ใน lib/domains.ts): ไม่มีรหัสนักศึกษา ไม่ต้องกรอก และบันทึก student_id เป็นค่าว่าง
 export default function ShopForm({ initial = empty, submitLabel, showLine, lockedStudentId, agency, onSubmit }:
   { initial?: V; submitLabel: string; showLine?: boolean; lockedStudentId?: string; agency?: boolean; tone?: string; onSubmit: (v: V) => Promise<string | void> }) {
   const [v, setV] = useState<V>({ ...initial, products: initial.products.filter(Boolean) });

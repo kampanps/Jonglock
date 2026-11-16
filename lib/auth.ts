@@ -1,7 +1,8 @@
 import type { User } from "@supabase/supabase-js";
 import { supabase, isAllowedEmail } from "./supabase";
 
-export const DOMAIN_ERROR = "อีเมลนี้ไม่ได้รับอนุญาต ใช้ได้เฉพาะ @kmutnb.ac.th, @email.kmutnb.ac.th, @op.kmutnb.ac.th หรือ @itm.kmutnb.ac.th เท่านั้น";
+import { agencyList } from "./domains";
+export const DOMAIN_ERROR = `อีเมลนี้ไม่ได้รับอนุญาต ใช้ได้เฉพาะอีเมลมหาวิทยาลัย (@email.kmutnb.ac.th, @kmutnb.ac.th) หรืออีเมลคณะ/หน่วยงาน (${agencyList})`;
 
 export const loginWithGoogle = () =>
   supabase.auth.signInWithOAuth({
