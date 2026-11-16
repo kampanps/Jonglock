@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { FaPen, FaUserShield, FaSignOutAlt, FaStore, FaHome } from "react-icons/fa";
 import { supabase } from "@/lib/supabase";
 import { checkAdmin } from "@/lib/adminCache";
+import { clearAllDrafts } from "@/lib/draft";
 
 type ItemProps = { icon: ReactNode; children: ReactNode; active?: boolean; tone?: string; href?: string; onClick?: () => void };
 
@@ -33,7 +34,7 @@ export default function Sidebar() {
     return () => { window.removeEventListener("keydown", k); document.body.style.overflow = ""; };
   }, [open]);
 
-  async function logout() { await supabase.auth.signOut(); router.replace("/login"); }
+  async function logout() { clearAllDrafts(); await supabase.auth.signOut(); router.replace("/login"); }   // ลบร่างฟอร์มที่ค้างในเครื่องด้วย
 
   return (
     <>

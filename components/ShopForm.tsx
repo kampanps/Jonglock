@@ -1,5 +1,5 @@
 "use client";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { FaLine, FaUser, FaStore, FaUsers, FaTag } from "react-icons/fa";
 import { inputCls } from "./ui";
 import type { Shop } from "@/lib/supabase";
@@ -25,10 +25,16 @@ const Field = ({ label, hint, children }: { label: string; hint?: string; childr
 );
 
 // agency = บัญชีคณะ/หน่วยงาน (AGENCY_DOMAINS ใน lib/domains.ts): ไม่มีรหัสนักศึกษา ไม่ต้องกรอก และบันทึก student_id เป็นค่าว่าง
-export default function ShopForm({ initial = empty, submitLabel, showLine, lockedStudentId, agency, onSubmit }:
-  { initial?: V; submitLabel: string; showLine?: boolean; lockedStudentId?: string; agency?: boolean; tone?: string; onSubmit: (v: V) => Promise<string | void> }) {
+// onChange = แจ้งทุกครั้งที่ผู้ใช้แก้ (ไม่เรียกตอนเปิดฟอร์ม) ใช้เก็บร่างในหน้าลงทะเบียน · initialTyping = คำในช่องสินค้าที่พิมพ์ค้างไว้
+export default function ShopForm({ initial = empty, initialTyping = "", submitLabel, showLine, lockedStudentId, agency, onChange, onSubmit }:
+  { initial?: V; initialTyping?: string; submitLabel: string; showLine?: boolean; lockedStudentId?: string; agency?: boolean; tone?: string;
+    onChange?: (v: V, typing: string) => void; onSubmit: (v: V) => Promise<string | void> }) {
   const [v, setV] = useState<V>({ ...initial, products: initial.products.filter(Boolean) });
-  const [draft, setDraft] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  const [draft, setDraft] = useState(initialTyping); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  const start = useRef(JSON.stringify([v, draft]));   // ค่าตอนเปิดฟอร์ม: ยังเท่าเดิม = ยังไม่มีใครแก้ ไม่ต้องแจ้ง
+  useEffect(() => {
+    if (onChange && JSON.stringify([v, draft]) !== start.current) onChange(v, draft);
+  }, [v, draft, onChange]);
   const set = (k: keyof V) => (e: React.ChangeEvent<HTMLInputElement>) => setV({ ...v, [k]: e.target.value });
 
   const addTag = (t: string) => {
@@ -89,7 +95,7 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
           ))}
         </div>
         <div className="flex gap-2 rounded-2xl bg-sky-400/10 p-3 text-sm text-sky-200"><FaTag className="mt-1 shrink-0" />
-          <p>ระบบใช้ข้อมูลนี้ไม่ให้คุณขายของซ้ำกับร้านในระยะ 3 ล็อกซ้าย–ขวา
+          <p>ระบบใช้ข้อมูลนี้ไม่ให้คุณขายของซ้ำกับร้านในระยะ 3 ล็อกซ้าย–ขวา (ยกเว้นโซนเสื้อผ้า)
             {/* แท็บใหม่: ข้อมูลที่กรอกอยู่ในฟอร์มไม่หาย */}
             <a href="/shops" target="_blank" rel="noopener" className="mt-1 block w-fit whitespace-nowrap font-medium text-sky-100 underline underline-offset-2 hover:text-white">ดูว่าร้านไหนขายอะไรแล้ว ↗</a>
           </p>

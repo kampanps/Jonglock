@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useGuard } from "@/lib/useGuard";
 import { Page } from "@/components/ui";
-import ShopForm from "@/components/ShopForm";
+import RegisterForm from "@/components/RegisterForm";
 import { isAgencyEmail, studentIdFromEmail } from "@/lib/studentId";
 
 export default function Register() {
@@ -23,8 +23,8 @@ export default function Register() {
   return (
     <Page title="ลงทะเบียนร้านของคุณ">
       <p className="-mt-2 mb-5 text-center text-slate-400">กรอกครั้งเดียว แก้ไขได้ทุกเมื่อก่อนวันงาน</p>
-      <ShopForm showLine lockedStudentId={sid} agency={agency} submitLabel="บันทึกและไปเลือกล็อค"
-        initial={{ owner_name: name, student_id: sid, shop_name: "", phone: "", products: [], guardians: [], line_joined: false }}
+      <RegisterForm uid={uid!} lockedStudentId={sid} agency={agency}
+        base={{ owner_name: name, student_id: sid, shop_name: "", phone: "", products: [], guardians: [], line_joined: false }}
         onSubmit={async (v) => {
           const { error } = await supabase.from("shops").insert(v)   // owner_id ตั้งโดยฐานข้อมูล (default auth.uid());
           if (error) return error.code === "23505" ? "คุณลงทะเบียนร้านไว้แล้ว" : error.message;
