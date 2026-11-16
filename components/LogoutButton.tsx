@@ -2,12 +2,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { clearAllDrafts } from "@/lib/draft";
 
 export default function LogoutButton() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   async function out() {
     setBusy(true);
+    clearAllDrafts();   // ลบร่างฟอร์มที่ค้างในเครื่องด้วย
     await supabase.auth.signOut();
     router.replace("/login");
   }

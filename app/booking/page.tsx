@@ -104,6 +104,7 @@ export default function Booking() {
       let expMs = expStr ? new Date(expStr).getTime() : NaN;
       if (!Number.isFinite(expMs)) expMs = Date.now() + skew.current + holdMin * 60_000;   // กัน NaN: ใช้เวลากันล็อกจากตั้งค่าแทน
       setExpiresAt(expMs); setNow(Date.now()); setPick(id); setNb(null);
+      if (CLOTHING.has(id)) { setNb([]); return; }                              // โซนเสื้อผ้าไม่มีกฎห้ามขายซ้ำ (find_conflict ใน DB ก็ข้าม)
       const { data: n } = await supabase.rpc("stall_neighbors", { p_stall: id });
       if (my === reqId.current) setNb((n ?? []) as Nb[]);                      // ทิ้งคำตอบที่ล้าสมัย
     } finally { choosing.current = false; }
@@ -123,7 +124,8 @@ export default function Booking() {
   const heldByOthers = new Set(holds.filter((h) => !h.mine && new Date(h.expires_at).getTime() > Date.now() + skew.current).map((h) => h.stall_id));
   const mineSet = new Set(mine.map(norm));
   const list = (nb ?? []).map((n) => ({ ...n, dup: n.products.filter((p) => mineSet.has(norm(p))) }));
-  const conflict = list.some((n) => n.dup.length > 0);
+  const pickIsClothing = !!pick && CLOTHING.has(pick);
+  const conflict = !pickIsClothing && list.some((n) => n.dup.length > 0);
   const rowFull = (z: string) => [1, 2, 3, 4].every((n) => taken.has(z + n));
   const locked = new Set(isClothingShop ? ["C1", "C2", "C3", "C4", "B1", "B2", "B3", "B4"].filter((id) => (id[0] === "C" && !rowFull("D")) || (id[0] === "B" && !rowFull("C"))) : []);
   const dim = new Set(ALL_IDS.filter((id) => CLOTHING.has(id) !== isClothingShop));
@@ -152,7 +154,9 @@ export default function Booking() {
               <span className={`font-mono text-2xl font-bold ${left < 60 ? "text-rose-300" : "text-amber-300"}`}>{mm}:{ss}</span>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            {pickIsClothing ? (
+              <p className="rounded-2xl border border-fuchsia-400/30 bg-fuchsia-400/10 p-4 text-sm text-fuchsia-100">👕 โซนเสื้อผ้า ไม่มีกฎห้ามขายซ้ำ อยู่ติดร้านเสื้อผ้าร้านอื่นได้</p>
+            ) : <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
               <p className="mb-2 text-sm font-medium text-slate-200">ร้านข้างเคียง ±{range} ล็อก (แถว {pick[0]})</p>
               {nb === null ? <p className="text-sm text-slate-500">กำลังตรวจร้านข้างเคียง…</p>
                 : list.length === 0 ? <p className="text-sm text-slate-500">ยังไม่มีร้านค้าในบริเวณนี้</p>
@@ -161,7 +165,7 @@ export default function Booking() {
                       {n.dup.length ? <FaTimesCircle className="mt-0.5 shrink-0 text-rose-400" aria-label="ซ้ำ" /> : <FaCheckCircle className="mt-0.5 shrink-0 text-emerald-400" aria-label="ไม่ซ้ำ" />}
                       <span className="text-slate-200"><b className="mr-1.5 text-slate-100">{n.stall_id}</b>{n.products.join(", ")}{n.dup.length > 0 && <em className="ml-1 not-italic text-rose-300">(ซ้ำ: {n.dup.join(", ")})</em>}</span>
                     </li>))}</ul>}
-            </div>
+            </div>}
             {conflict && <p role="alert" className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-200">มีสินค้าซ้ำกับร้านข้างเคียง จึงจองล็อกนี้ไม่ได้</p>}
 
             <Btn disabled={busy || nb === null || conflict} onClick={confirm} className="w-full py-3.5 disabled:grayscale">{busy ? "กำลังจอง…" : `ยืนยันจองล็อก ${pick}`}</Btn>

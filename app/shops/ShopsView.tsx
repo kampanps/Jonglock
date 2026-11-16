@@ -67,7 +67,7 @@ export default function ShopsView({ dir, failed, onRetry }: { dir: Directory | n
             ))}
           </div>
 
-          <p className="rounded-2xl bg-sky-400/10 p-3 text-sm leading-relaxed text-sky-200">🏷 ห้ามขายของซ้ำกับร้านในระยะ 3 ล็อกซ้าย–ขวา เช็กก่อนว่ามีใครขายอะไรแล้ว</p>
+          <p className="rounded-2xl bg-sky-400/10 p-3 text-sm leading-relaxed text-sky-200">🏷 ห้ามขายของซ้ำกับร้านในระยะ 3 ล็อกซ้าย–ขวา (ยกเว้นโซนเสื้อผ้า) เช็กก่อนว่ามีใครขายอะไรแล้ว</p>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
