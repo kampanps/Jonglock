@@ -35,3 +35,8 @@ Why: หน่วยงานต้องจองล็อกได้ อี�
 Decision: เพิ่ม @itm.kmutnb.ac.th เป็นบัญชีหน่วยงานแบบเดียวกับ @op (ไม่มีรหัสนักศึกษา) regex ทุกที่เป็น @((email|op|itm)\.)?kmutnb\.ac\.th$ และ isAgencyEmail = @(op|itm)\.kmutnb\.ac\.th$ (supabase/04_add_itm_domain.sql)
 Why: หน่วยงานที่ใช้โดเมน itm ต้องจองล็อกได้
 Supersedes: D-7
+
+## D-9 · 2026-11-16 · รับอีเมลคณะ/หน่วยงาน fitm, bas, agro, icit
+Decision: โดเมนที่รับ: email., (ไม่มี subdomain), op, itm, fitm, bas, agro, icit .kmutnb.ac.th — DB regex @((email|op|itm|fitm|bas|agro|icit)\.)?kmutnb\.ac\.th$ (supabase/05_add_faculty_domains.sql) หน้าเว็บอ่านจาก lib/domains.ts ที่เดียว (PERSON_DOMAINS + AGENCY_DOMAINS) คณะ/หน่วยงานทั้งหมดเป็นบัญชีหน่วยงาน ไม่มีรหัสนักศึกษา
+Why: คณะและหน่วยงานในวิทยาเขตปราจีนบุรีต้องจองล็อกได้ รวมรายชื่อไว้ที่เดียวกันลืมแก้บางจุด
+Supersedes: D-8
