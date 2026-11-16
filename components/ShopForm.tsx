@@ -24,7 +24,7 @@ const Field = ({ label, hint, children }: { label: string; hint?: string; childr
   <div><label className="mb-1.5 block text-sm text-slate-300">{label} <span className="text-neon-pink">*</span></label>{children}{hint && <p className="mt-1.5 text-xs text-slate-500">{hint}</p>}</div>
 );
 
-// agency = บัญชีหน่วยงาน (@op.kmutnb.ac.th): ไม่มีรหัสนักศึกษา ไม่ต้องกรอก และบันทึก student_id เป็นค่าว่าง
+// agency = บัญชีหน่วยงาน (@op / @itm .kmutnb.ac.th): ไม่มีรหัสนักศึกษา ไม่ต้องกรอก และบันทึก student_id เป็นค่าว่าง
 export default function ShopForm({ initial = empty, submitLabel, showLine, lockedStudentId, agency, onSubmit }:
   { initial?: V; submitLabel: string; showLine?: boolean; lockedStudentId?: string; agency?: boolean; tone?: string; onSubmit: (v: V) => Promise<string | void> }) {
   const [v, setV] = useState<V>({ ...initial, products: initial.products.filter(Boolean) });
@@ -57,7 +57,7 @@ export default function ShopForm({ initial = empty, submitLabel, showLine, locke
       <Card icon={<FaUser />} title="ผู้ลงทะเบียน">
         <Field label="ชื่อ–นามสกุล" hint="ดึงจากบัญชีมหาวิทยาลัยให้แล้ว แก้ไขได้"><input required className={inputCls} value={v.owner_name} onChange={set("owner_name")} /></Field>
         {agency ? (
-          <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">🏢 บัญชีหน่วยงาน (@op.kmutnb.ac.th) — ไม่ต้องใช้รหัสนักศึกษา</p>
+          <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">🏢 บัญชีหน่วยงาน — ไม่ต้องใช้รหัสนักศึกษา</p>
         ) : <Field label="รหัสนักศึกษา" hint={lockedStudentId ? "ดึงจากอีเมลมหาวิทยาลัยอัตโนมัติ แก้ไขไม่ได้" : undefined}>
           {lockedStudentId ? (
             <div className="relative">
