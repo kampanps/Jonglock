@@ -7,7 +7,7 @@ import { Page } from "@/components/ui";
 import { FaLine } from "react-icons/fa";
 
 // ★ แก้ลิงก์กลุ่มไลน์ตรงนี้ (หรือกำหนด NEXT_PUBLIC_LINE_GROUP_URL ใน .env.local ให้ใช้ลิงก์เดียวกันทั้งระบบ)
-const lineGroupUrl = process.env.NEXT_PUBLIC_LINE_GROUP_URL ?? "https://line.me/ti/g/ใส่ลิงก์กลุ่มของคุณ";
+const lineGroupUrl = process.env.NEXT_PUBLIC_LINE_GROUP_URL ?? "https://line.me/R/ti/g/QwAUE--TUr";
 import ShopForm from "@/components/ShopForm";
 
 export default function Edit() {
