@@ -19,9 +19,9 @@ const FOOD = "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
 const CLOTH = "border-fuchsia-400/40 bg-fuchsia-400/10 text-fuchsia-200";
 const ROWS = [["A"], ["B", "C"], ["D"]];
 
-type Props = { taken: Set<string>; mine?: string | null; selected?: string | null; held?: Set<string>; locked?: Set<string>; dim?: Set<string>; readOnly?: boolean; onPick?: (id: string) => void };
+type Props = { taken: Set<string>; mine?: string | null; selected?: string | null; held?: Set<string>; locked?: Set<string>; dim?: Set<string>; zoneActive?: boolean; releaseLabel?: string; readOnly?: boolean; onPick?: (id: string) => void };
 
-export default function UserStallMap({ taken, mine = null, selected = null, held = new Set<string>(), locked = new Set<string>(), dim = new Set<string>(), readOnly = false, onPick }: Props) {
+export default function UserStallMap({ taken, mine = null, selected = null, held = new Set<string>(), locked = new Set<string>(), dim = new Set<string>(), zoneActive = true, releaseLabel = "", readOnly = false, onPick }: Props) {
   const [zoom, setZoom] = useState<string | null>(null);
   const freeIn = (z: string) => rowLen(z) - Array.from(taken).filter((id) => id[0] === z).length;
 
@@ -73,9 +73,9 @@ export default function UserStallMap({ taken, mine = null, selected = null, held
               <div key={g.join()} className={`space-y-2 ${gi ? "pt-6" : ""}`}>
                 {/* ป้ายโซน: แถว A = อาหาร · กลุ่ม B/C = เสื้อผ้า (คอลัมน์ 1–4) + อาหาร (5–12) */}
                 <div className="flex gap-2"><div className="w-16 shrink-0" />
-                  {gi === 1 ? (
-                    <div className="grid flex-1 grid-cols-[repeat(14,minmax(0,1fr))] gap-1.5"><div className="col-span-4"><Badge tone={CLOTH}>โซนเสื้อผ้า (เปิดแถว D ก่อน)</Badge></div><div className="col-span-10"><Badge tone={FOOD}>โซนอาหารและเครื่องดื่ม</Badge></div></div>
-                  ) : gi === 0 ? <Badge tone={FOOD}>โซนอาหารและเครื่องดื่ม</Badge> : null}
+                  {gi === 2 && zoneActive ? (
+                    <div className="grid flex-1 grid-cols-[repeat(14,minmax(0,1fr))] gap-1.5"><div className="col-span-4"><Badge tone={CLOTH}>{`โซนเสื้อผ้า${releaseLabel ? ` · ทั่วไปตั้งแต่ ${releaseLabel}` : ""}`}</Badge></div><div className="col-span-10"><Badge tone={FOOD}>โซนอาหารและเครื่องดื่ม</Badge></div></div>
+                  ) : <Badge tone={FOOD}>โซนอาหารและเครื่องดื่ม</Badge>}
                 </div>
                 <div className={g.length > 1 ? "space-y-0.5" : "space-y-2"}>{g.map((z) => (
                   <div key={z} className={`flex items-center gap-2 transition duration-500 ${zoom && zoom !== z ? "opacity-30" : ""}`}>
@@ -83,7 +83,7 @@ export default function UserStallMap({ taken, mine = null, selected = null, held
                       className={`sticky left-0 z-[1] flex w-16 shrink-0 flex-col items-center rounded-xl border py-1 leading-tight transition ${zoom === z ? "border-sky-300 bg-sky-400/20" : "border-white/15 bg-slate-900 hover:border-white/30"}`}>
                       <b className="text-lg text-white">{z}</b><span className="text-[11px] text-emerald-300">{freeIn(z)} ว่าง</span>
                     </button>
-                    {z === "A" ? <div className="grid flex-1 grid-cols-[repeat(7,minmax(0,1fr))_0.5rem_repeat(6,minmax(0,1fr))] gap-1.5">{ids(z).slice(0, 7).map((id) => cell(id, z))}<div aria-hidden />{ids(z).slice(7).map((id) => cell(id, z))}</div> : (
+                    {z === "A" ? <div className="grid flex-1 grid-cols-[repeat(7,minmax(0,1fr))_0.5rem_repeat(6,minmax(0,1fr))] gap-1.5">{ids(z).slice(0, 7).map((id) => cell(id, z))}<div aria-hidden />{ids(z).slice(7).map((id) => cell(id, z))}</div> : z !== "D" || !zoneActive ? <div className="grid flex-1 grid-cols-[repeat(14,minmax(0,1fr))] gap-1.5">{ids(z).map((id) => cell(id, z))}</div> : (
                       <div className="grid flex-1 grid-cols-[repeat(14,minmax(0,1fr))] gap-1.5">
                         {/* กล่องครอบโซนเสื้อผ้า คอลัมน์ 1–4 */}
                         <div className="col-span-4 -m-1 grid grid-cols-4 gap-1.5 rounded-xl border border-fuchsia-400/30 bg-fuchsia-400/[0.06] p-1">{ids(z).slice(0, 4).map((id) => cell(id, z))}</div>

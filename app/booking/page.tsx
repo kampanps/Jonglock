@@ -8,7 +8,7 @@ import { Page, Btn } from "@/components/ui";
 import UserStallMap from "@/components/UserStallMap";
 import { CLOTHING, ALL_IDS } from "@/lib/venue";
 
-type Snap = { taken: string[]; holds: { stall_id: string; mine: boolean; expires_at: string }[]; mine: string | null; server_now: string };
+type Snap = { taken: string[]; holds: { stall_id: string; mine: boolean; expires_at: string }[]; mine: string | null; server_now: string; zone_release_at: string | null };
 type Nb = { stall_id: string; products: string[] };
 const norm = (s: string) => s.trim().toLowerCase();
 const POLL_MS = 2000;
@@ -29,7 +29,8 @@ export default function Booking() {
   const [holds, setHolds] = useState<Snap["holds"]>([]);
   const [pick, setPick] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState(0); const [now, setNow] = useState(0);
-  const [range, setRange] = useState(3); const [holdMin, setHoldMin] = useState(5); const [mine, setMine] = useState<string[]>([]);
+  const [range, setRange] = useState(3); const [holdMin, setHoldMin] = useState(5);
+  const [releaseAt, setReleaseAt] = useState<number | null>(null); const [, setTick] = useState(0); const [mine, setMine] = useState<string[]>([]);
   const [nb, setNb] = useState<Nb[] | null>(null);
   const [live, setLive] = useState(false); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; text: string }[]>([]); const [done, setDone] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export default function Booking() {
     if (error || !data) { setLive(false); return; }
     const s = data as Snap; setLive(true);
     skew.current = new Date(s.server_now).getTime() - Date.now();
+    setReleaseAt(s.zone_release_at ? new Date(s.zone_release_at).getTime() : null);
     if (s.mine && !doneRef.current) { router.replace("/detail"); return; }
     const next = new Set(s.taken), prev = prevTaken.current;
     if (prev) next.forEach((id) => { if (!prev.has(id)) addToast("🎵 " + TOAST_MSGS[Math.floor(Math.random() * TOAST_MSGS.length)](id)); });
@@ -87,11 +89,14 @@ export default function Booking() {
   const left = pick ? Math.max(0, Math.ceil((expiresAt - (now + skew.current)) / 1000)) : 0;
   useEffect(() => { if (pick && now && left <= 0) close(pick, "หมดเวลายืนยัน กรุณาเลือกล็อกใหม่"); }, [left, pick, now, close]);
 
+  useEffect(() => { const t = setInterval(() => setTick((n) => n + 1), 1000); return () => clearInterval(t); }, []);   // เช็คเวลาทุกวินาที → ผังเปลี่ยนเองเมื่อถึงเวลา
   const isClothingShop = mine.some((p) => norm(p) === "เสื้อผ้า");
+  // เวลาปลดล็อก = เวลาเซิร์ฟเวอร์ (เครื่องผู้ใช้ + ส่วนต่างที่วัดจาก server_now) · การตัดสินจริงอยู่ที่ฐานข้อมูล
+  const zoneActive = releaseAt === null || Date.now() + skew.current < releaseAt;
   async function choose(id: string) {
     if (choosing.current || doneRef.current) return;                         // กดรัว: ขณะรอคำตอบเก่า ไม่รับคลิกใหม่
-    if (!isClothingShop && CLOTHING.has(id)) return notify("โซนนี้สงวนสิทธิ์สำหรับร้านเสื้อผ้าเท่านั้น");
-    if (isClothingShop && !CLOTHING.has(id)) return notify("ร้านเสื้อผ้าจองได้เฉพาะโซนเสื้อผ้า");
+    if (zoneActive && !isClothingShop && CLOTHING.has(id)) return notify("โซนนี้สงวนสิทธิ์สำหรับร้านเสื้อผ้าเท่านั้น");
+    if (zoneActive && isClothingShop && !CLOTHING.has(id)) return notify("ร้านเสื้อผ้าจองได้เฉพาะโซนเสื้อผ้า");
     choosing.current = true; const my = ++reqId.current; setErr("");
     try {
       const { data, error } = await supabase.rpc("hold_stall", { p_stall: id });
@@ -104,7 +109,6 @@ export default function Booking() {
       let expMs = expStr ? new Date(expStr).getTime() : NaN;
       if (!Number.isFinite(expMs)) expMs = Date.now() + skew.current + holdMin * 60_000;   // กัน NaN: ใช้เวลากันล็อกจากตั้งค่าแทน
       setExpiresAt(expMs); setNow(Date.now()); setPick(id); setNb(null);
-      if (CLOTHING.has(id)) { setNb([]); return; }                              // โซนเสื้อผ้าไม่มีกฎห้ามขายซ้ำ (find_conflict ใน DB ก็ข้าม)
       const { data: n } = await supabase.rpc("stall_neighbors", { p_stall: id });
       if (my === reqId.current) setNb((n ?? []) as Nb[]);                      // ทิ้งคำตอบที่ล้าสมัย
     } finally { choosing.current = false; }
@@ -124,23 +128,20 @@ export default function Booking() {
   const heldByOthers = new Set(holds.filter((h) => !h.mine && new Date(h.expires_at).getTime() > Date.now() + skew.current).map((h) => h.stall_id));
   const mineSet = new Set(mine.map(norm));
   const list = (nb ?? []).map((n) => ({ ...n, dup: n.products.filter((p) => mineSet.has(norm(p))) }));
-  const pickIsClothing = !!pick && CLOTHING.has(pick);
-  const conflict = !pickIsClothing && list.some((n) => n.dup.length > 0);
-  const rowFull = (z: string) => [1, 2, 3, 4].every((n) => taken.has(z + n));
-  const locked = new Set(isClothingShop ? ["C1", "C2", "C3", "C4", "B1", "B2", "B3", "B4"].filter((id) => (id[0] === "C" && !rowFull("D")) || (id[0] === "B" && !rowFull("C"))) : []);
-  const dim = new Set(ALL_IDS.filter((id) => CLOTHING.has(id) !== isClothingShop));
+  const conflict = list.some((n) => n.dup.length > 0);
+  const dim = new Set(zoneActive ? ALL_IDS.filter((id) => CLOTHING.has(id) !== isClothingShop) : []);
+  const releaseLabel = releaseAt ? new Date(releaseAt).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Asia/Bangkok" }) : "";
   const mm = String(Math.floor(left / 60)).padStart(2, "0"), ss = String(left % 60).padStart(2, "0");
 
   return (
     <Page title="เลือกล็อก" wide>
       <div className="mb-4 flex items-center justify-between gap-3">
-        {/* แท็บใหม่: ล็อกที่ hold ไว้ไม่หลุด */}
-        <a href="/shops" target="_blank" rel="noopener" className="-ml-2 inline-flex min-h-11 items-center rounded-xl px-2 text-sm text-sky-200 underline underline-offset-2 transition hover:bg-white/5 hover:text-white">ดูร้านที่จองแล้ว ↗</a>
+        <div className="flex-1" />
         <span className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${live ? "border-emerald-400/50 bg-emerald-400/10 text-emerald-300 " : "border-white/10 text-slate-500"}`}>
           <i className={`size-2 rounded-full ${live ? "animate-pulse bg-emerald-400" : "bg-slate-500"}`} />{live ? "LIVE" : "OFFLINE"}</span>
       </div>
       {err && <p role="alert" className="mb-4 rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-rose-200">{err}</p>}
-      <UserStallMap taken={taken} held={heldByOthers} selected={pick} locked={locked} dim={dim} onPick={choose} />
+      <UserStallMap taken={taken} held={heldByOthers} selected={pick} dim={dim} zoneActive={zoneActive} releaseLabel={releaseLabel} onPick={choose} />
 
       {pick && (
         /* มือถือ: Bottom Sheet ชิดขอบล่าง กว้างเต็มจอ · เดสก์ท็อป: กลางจอ */
@@ -154,9 +155,7 @@ export default function Booking() {
               <span className={`font-mono text-2xl font-bold ${left < 60 ? "text-rose-300" : "text-amber-300"}`}>{mm}:{ss}</span>
             </div>
 
-            {pickIsClothing ? (
-              <p className="rounded-2xl border border-fuchsia-400/30 bg-fuchsia-400/10 p-4 text-sm text-fuchsia-100">👕 โซนเสื้อผ้า ไม่มีกฎห้ามขายซ้ำ อยู่ติดร้านเสื้อผ้าร้านอื่นได้</p>
-            ) : <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
               <p className="mb-2 text-sm font-medium text-slate-200">ร้านข้างเคียง ±{range} ล็อก (แถว {pick[0]})</p>
               {nb === null ? <p className="text-sm text-slate-500">กำลังตรวจร้านข้างเคียง…</p>
                 : list.length === 0 ? <p className="text-sm text-slate-500">ยังไม่มีร้านค้าในบริเวณนี้</p>
@@ -165,7 +164,7 @@ export default function Booking() {
                       {n.dup.length ? <FaTimesCircle className="mt-0.5 shrink-0 text-rose-400" aria-label="ซ้ำ" /> : <FaCheckCircle className="mt-0.5 shrink-0 text-emerald-400" aria-label="ไม่ซ้ำ" />}
                       <span className="text-slate-200"><b className="mr-1.5 text-slate-100">{n.stall_id}</b>{n.products.join(", ")}{n.dup.length > 0 && <em className="ml-1 not-italic text-rose-300">(ซ้ำ: {n.dup.join(", ")})</em>}</span>
                     </li>))}</ul>}
-            </div>}
+            </div>
             {conflict && <p role="alert" className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-200">มีสินค้าซ้ำกับร้านข้างเคียง จึงจองล็อกนี้ไม่ได้</p>}
 
             <Btn disabled={busy || nb === null || conflict} onClick={confirm} className="w-full py-3.5 disabled:grayscale">{busy ? "กำลังจอง…" : `ยืนยันจองล็อก ${pick}`}</Btn>

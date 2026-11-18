@@ -8,12 +8,14 @@ import UserStallMap from "@/components/UserStallMap";
 
 export default function Preview() {
   const router = useRouter(); const uid = useGuard();
-  const [taken, setTaken] = useState<Set<string> | null>(null); const [mine, setMine] = useState<string | null>(null);
+  const [taken, setTaken] = useState<Set<string> | null>(null); const [mine, setMine] = useState<string | null>(null); const [zoneActive, setZoneActive] = useState(true);
   useEffect(() => {
     if (!uid) return;
     (async () => {
       const { data: shop } = await supabase.from("shops").select("id").maybeSingle();
       const { data } = await supabase.from("bookings").select("stall_id, shop_id");
+      const { data: cfg } = await supabase.from("app_settings").select("zone_release_at").single();
+      if (cfg) setZoneActive(Date.now() < new Date(cfg.zone_release_at).getTime());   // ใช้แสดงผลอย่างเดียว
       setTaken(new Set((data ?? []).map((b) => b.stall_id)));
       setMine(data?.find((b) => b.shop_id === shop?.id)?.stall_id ?? null);
     })();
